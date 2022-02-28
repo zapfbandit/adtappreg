@@ -1,5 +1,23 @@
 # Comments are allowed!
-applicationName: Test
+applicationName: WSL update
 description: Hello world!
-someField: 
+appVersion: "1.2.3.4"
+assginments:
+  available:
+    - Hardware
+  required:
+    - Engineers
+    - Software
+installInfo:
+  setupFile: wsl_update_x64.msi
+  runAsAccount: user
+  msi:
+  installer:
+  custom:
+# The following lists detection rules and requirements rules
+rules:
 
+# Maps return codes to install result types
+returnCodes:
+  - code: 0
+    type: success # Valid values: failed, success, softReboot, hardReboot, retry
