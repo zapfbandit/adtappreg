@@ -1,3 +1,4 @@
+Import-Module powershell-yaml
 
 <#
 
@@ -654,7 +655,8 @@ param
     
     elseif($MSI){
     
-        $DR = @{ "@odata.type" = "#microsoft.graph.win32LobAppProductCodeDetection" }
+        $DR = @{ "@odata.type" = "#microsoft.graph.win32LobAppProductCodeRule" }
+        $DR.ruleType = "detection"
         $DR.productVersionOperator = "notConfigured";
         $DR.productCode = "$MsiProductCode";
         $DR.productVersion =  $null;
@@ -663,10 +665,11 @@ param
 
     elseif($File){
     
-        $DR = @{ "@odata.type" = "#microsoft.graph.win32LobAppFileSystemDetection" }
+        $DR = @{ "@odata.type" = "#microsoft.graph.win32LobAppFileSystemRule" }
+        $DR.ruleType = "detection"
         $DR.check32BitOn64System = "$check32BitOn64System";
-        $DR.detectionType = "$FileDetectionType";
-        $DR.detectionValue = $FileDetectionValue;
+        $DR.operationType = "$FileDetectionType";
+        $DR.comparisonValue = $FileDetectionValue;
         $DR.fileOrFolderName = "$FileOrFolderName";
         $DR.operator =  "notConfigured";
         $DR.path = "$Path"
@@ -675,10 +678,11 @@ param
 
     elseif($Registry){
     
-        $DR = @{ "@odata.type" = "#microsoft.graph.win32LobAppRegistryDetection" }
+        $DR = @{ "@odata.type" = "#microsoft.graph.win32LobAppRegistryRule" }
+        $DR.ruleType = "detection"
         $DR.check32BitOn64System = "$check32BitRegOn64System";
-        $DR.detectionType = "$RegistryDetectionType";
-        $DR.detectionValue = "";
+        $DR.operationType = "$RegistryDetectionType";
+        $DR.comparisonValue = "";
         $DR.keyPath = "$RegistryKeyPath";
         $DR.operator = "notConfigured";
         $DR.valueName = "$RegistryValue"
@@ -1124,85 +1128,28 @@ $sleep = 30
 # Sample Win32 Application
 ####################################################
 
-$SourceFile = "C:\packages\package.intunewin"
+$SourceFile = "C:\packages\wsl_update_x64.intunewin"
 
-## Defining Intunewin32 detectionRules
-#$DetectionXML = Get-IntuneWinXML "$SourceFile" -fileName "detection.xml"
-#
-## Defining Intunewin32 detectionRules
-#$FileRule = New-DetectionRule -File -Path "C:\Program Files\Application" `
-#-FileOrFolderName "application.exe" -FileDetectionType exists -check32BitOn64System False
-#
-#$RegistryRule = New-DetectionRule -Registry -RegistryKeyPath "HKEY_LOCAL_MACHINE\SOFTWARE\Program" `
-#-RegistryDetectionType exists -check32BitRegOn64System True
-#
-#$MSIRule = New-DetectionRule -MSI -MSIproductCode $DetectionXML.ApplicationInfo.MsiInfo.MsiProductCode
-#
-## Creating Array for detection Rule
-#$DetectionRule = @($FileRule,$RegistryRule,$MSIRule)
-#
-#$ReturnCodes = Get-DefaultReturnCodes
-#
-#$ReturnCodes += New-ReturnCode -returnCode 302 -type softReboot
-#$ReturnCodes += New-ReturnCode -returnCode 145 -type hardReboot
-#
-## Win32 Application Upload
-#Upload-Win32Lob -SourceFile "$SourceFile" -publisher "Publisher" `
-#-description "Description" -detectionRules $DetectionRule -returnCodes $ReturnCodes `
-#-installCmdLine "powershell.exe .\install.ps1" `
-#-uninstallCmdLine "powershell.exe .\uninstall.ps1"
+# Defining Intunewin32 detectionRules
+$DetectionXML = Get-IntuneWinXML "$SourceFile" -fileName "detection.xml"
 
-$SourceFile = "C:\packages\package.intunewin"
+# Defining Intunewin32 detectionRules
+$FileRule = New-DetectionRule -File -Path "C:\Program Files\Application" -FileOrFolderName "application.exe" -FileDetectionType exists -check32BitOn64System False
 
-$PowerShellScript = "C:\Scripts\sample.ps1"
+$RegistryRule = New-DetectionRule -Registry -RegistryKeyPath "HKEY_LOCAL_MACHINE\SOFTWARE\Program" -RegistryDetectionType exists -check32BitRegOn64System True
 
-$PowerShellRule = New-DetectionRule -PowerShell -ScriptFile "$PowerShellScript" -enforceSignatureCheck $false -runAs32Bit $true
+$MSIRule = New-DetectionRule -MSI -MSIproductCode $DetectionXML.ApplicationInfo.MsiInfo.MsiProductCode
 
 # Creating Array for detection Rule
-$DetectionRule = @($PowerShellRule)
+$DetectionRule = @($FileRule,$RegistryRule,$MSIRule)
 
 $ReturnCodes = Get-DefaultReturnCodes
 
+$ReturnCodes += New-ReturnCode -returnCode 302 -type softReboot
+$ReturnCodes += New-ReturnCode -returnCode 145 -type hardReboot
+
 # Win32 Application Upload
-Upload-Win32Lob -SourceFile "$SourceFile" -publisher "Publisher" -description "Description" -detectionRules $DetectionRule -returnCodes $ReturnCodes -installCmdLine "powershell.exe -executionpolicy Bypass .\install.ps1" -uninstallCmdLine "powershell.exe -executionpolicy Bypass .\uninstall.ps1"
-Exit 0
-
-# debugging
-$appId = "de4d2c53-5052-41ad-9912-d9d598da0c34"
-$listAssignmentsUri = "mobileApps/$appId/assignments"
-#$stuff = MakeRequest "Get" $listAssignmentsUri $null
-#$stuff
-$assignBody = @{ "@odata.type" = "#microsoft.graph.mobileAppAssignment" }
-$assignBody.intent = "available"
-$assignBody.target = @{
-    "@odata.type" = "#microsoft.graph.groupAssignmentTarget";
-    "groupId" = "d251b7b9-707e-4ab6-af25-08ef9e447434";
-}
-$assignBody.settings = @{ "@odata.type" = "#microsoft.graph.win32LobAppAssignmentSettings" }
-$assignBody.settings.notifications = "showAll";
-$assignBody.settings.restartSettings = $null#@{ "@odata.type" = "microsoft.graph.win32LobAppRestartSettings" }
-#$assignBody.settings.restartSettings.gracePeriodInMinutes = 1024
-#$assignBody.settings.restartSettings.countdownDisplayBeforeRestartInMinutes = 1024
-#$assignBody.settings.restartSettings.restartNotificationSnoozeDurationInMinutes = 1024
-$assignBody.settings.installTimeSettings = $null#@{ "@odata.type" = "microsoft.graph.mobileAppInstallTimeSettings" }
-#$assignBody.settings.installTimeSettings.useLocalTime = $true;
-#$assignBody.settings.installTimeSettings.startDateTime = "String (timestamp)";
-#$assignBody.settings.installTimeSettings.deadlineDateTime = "String (timestamp)";
-$assignBody.settings.deliveryOptimizationPriority = "notConfigured";
-
-try {
-MakeRequest "Post" $listAssignmentsUri $($assignBody | ConvertTo-Json)
-}
-catch
-{
-    $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-    $ErrResp = $streamReader.ReadToEnd()
-    $streamReader.Close()
-    Write-Host $ErrResp
-}
-
-#$(MakeRequest "Get" $listAssignmentsUri $null | ConvertTo-Json)
-#Write-Host (MakeRequest "Get" $listAssignmentsUri $null | Format-Table | Out-String)
+Upload-Win32Lob -SourceFile "$SourceFile" -publisher "Publisher" -description "Description" -detectionRules $DetectionRule -returnCodes $ReturnCodes
 
 pause
 
