@@ -1,23 +1,34 @@
 # Comments are allowed!
+
+# Basic application information
 applicationName: WSL update
 description: Hello world!
 appVersion: "1.2.3.4"
+
+# Which users should be able to install the application
 assginments:
   available:
     - Hardware
   required:
     - Engineers
     - Software
+    
+# Info on how to install application
 installInfo:
   setupFile: wsl_update_x64.msi
   runAsAccount: user
-  msi:
-  installer:
-  custom:
+  
+  # Choose one of the below
+  msi: 
+  installer: # for things like setup.exe
+  custom: # for maximum power
+
 # The following lists detection rules and requirements rules
-rules:
+customRules:
 
 # Maps return codes to install result types
 returnCodes:
   - code: 0
     type: success # Valid values: failed, success, softReboot, hardReboot, retry
+  - code: 99
+    type: failed
