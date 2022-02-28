@@ -1,0 +1,9 @@
+POST https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/1d0aa73e-6950-42bb-81c2-548772d5c731/microsoft.graph.win32LobApp/contentVersions/1/files
+{
+    "@odata.type":  "#microsoft.graph.mobileAppContentFile",
+    "manifest":  null,
+    "size":  116,
+    "name":  "IntunePackage.intunewin",
+    "sizeEncrypted":  176,
+    "isDependency":  false
+}

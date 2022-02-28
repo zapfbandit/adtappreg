@@ -1,0 +1,16 @@
+Post https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/1d0aa73e-6950-42bb-81c2-548772d5c731/assignments
+{
+    "target":  {
+                   "@odata.type":  "#microsoft.graph.groupAssignmentTarget",
+                   "groupId":  "d251b7b9-707e-4ab6-af25-08ef9e447434"
+               },
+    "settings":  {
+                     "restartSettings":  null,
+                     "notifications":  "showAll",
+                     "installTimeSettings":  null,
+                     "deliveryOptimizationPriority":  "notConfigured",
+                     "@odata.type":  "#microsoft.graph.win32LobAppAssignmentSettings"
+                 },
+    "intent":  "available",
+    "@odata.type":  "#microsoft.graph.mobileAppAssignment"
+}

@@ -1,0 +1,141 @@
+POST https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps
+{
+    "msiInformation":  null,
+    "description":  "Description",
+    "displayName":  "setup.exe",
+    "minimumSupportedOperatingSystem":  {
+                                            "v10_1607":  true
+                                        },
+    "fileName":  "IntunePackage.intunewin",
+    "@odata.type":  "#microsoft.graph.win32LobApp",
+    "privacyInformationUrl":  null,
+    "notes":  "",
+    "informationUrl":  null,
+    "installExperience":  {
+                              "runAsAccount":  "system"
+                          },
+    "owner":  "",
+    "installCommandLine":  "powershell.exe -executionpolicy Bypass .\\install.ps1",
+    "publisher":  "Publisher",
+    "runAs32bit":  false,
+    "uninstallCommandLine":  "powershell.exe -executionpolicy Bypass .\\uninstall.ps1",
+    "setupFilePath":  "setup.exe",
+    "developer":  "",
+    "isFeatured":  false,
+    "rules":  [
+                  {
+                      "operationType":  "notConfigured",
+                      "@odata.type":  "#microsoft.graph.win32LobAppPowerShellScriptRule",
+                      "scriptContent":  "",
+                      "ruleType":  "detection",
+                      "enforceSignatureCheck":  false,
+                      "runAs32Bit":  false
+                  }
+              ],
+    "returnCodes":  [
+                        {
+                            "returnCode":  0,
+                            "type":  "success"                                                                                                  },                                                                                                                      {                                                                                                                           "returnCode":  1707,                                                                                                    "type":  "success"                                                                                                  },                                                                                                                      {                                                                                                                           "returnCode":  3010,                                                                                                    "type":  "softReboot"                                                                                               },                                                                                                                      {
+                            "returnCode":  1641,
+                            "type":  "hardReboot"
+                        },
+                        {
+                            "returnCode":  1618,
+                            "type":  "retry"
+                        }
+                    ]
+}
+
+POST https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps
+{
+    "msiInformation":  {
+                           "requiresReboot":  "False",
+                           "productVersion":  "5.10.16",
+                           "publisher":  "Microsoft Corporation",
+                           "productCode":  "{36EF257E-21D5-44F7-8451-07923A8C465E}",
+                           "upgradeCode":  "{1C3DB5B6-65A5-4EBC-A5B9-2F2D6F665F48}",
+                           "productName":  "Windows Subsystem for Linux Update",
+                           "packageType":  "PerMachine"
+                       },
+    "description":  "Description",
+    "displayName":  "Windows Subsystem for Linux Update",
+    "minimumSupportedOperatingSystem":  {
+                                            "v10_1607":  true
+                                        },
+    "fileName":  "IntunePackage.intunewin",
+    "@odata.type":  "#microsoft.graph.win32LobApp",
+    "privacyInformationUrl":  null,
+    "notes":  "",
+    "informationUrl":  null,
+    "installExperience":  {
+                              "runAsAccount":  "system"
+                          },
+    "owner":  "",
+    "applicableArchitectures":  "x64,x86",
+    "publisher":  "Publisher",
+    "runAs32bit":  false,
+    "uninstallCommandLine":  "msiexec /x \"{36EF257E-21D5-44F7-8451-07923A8C465E}\"",
+    "setupFilePath":  "wsl_update_x64.msi",
+    "installCommandLine":  "msiexec /i \"wsl_update_x64.msi\"",
+    "developer":  "",
+    "isFeatured":  false,
+    "rules":  [
+                  {
+                      "operationType":  "exists",
+                      "@odata.type":  "#microsoft.graph.win32LobAppFileSystemRule",
+                      "path":  "C:\\Program Files\\Application",
+                      "ruleType":  "detection",
+                      "comparisonValue":  null,
+                      "operator":  "notConfigured",
+                      "fileOrFolderName":  "application.exe",
+                      "check32BitOn64System":  "False"
+                  },
+                  {
+                      "operationType":  "exists",
+                      "@odata.type":  "#microsoft.graph.win32LobAppRegistryRule",
+                      "keyPath":  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Program",
+                      "ruleType":  "detection",
+                      "comparisonValue":  "",
+                      "operator":  "notConfigured",
+                      "valueName":  "",
+                      "check32BitOn64System":  "True"
+                  },
+                  {
+                      "productVersion":  null,
+                      "ruleType":  "detection",
+                      "productCode":  "{36EF257E-21D5-44F7-8451-07923A8C465E}",
+                      "productVersionOperator":  "notConfigured",
+                      "@odata.type":  "#microsoft.graph.win32LobAppProductCodeRule"
+                  }
+              ],
+    "returnCodes":  [
+                        {
+                            "returnCode":  0,
+                            "type":  "success"
+                        },
+                        {
+                            "returnCode":  1707,
+                            "type":  "success"
+                        },
+                        {
+                            "returnCode":  3010,
+                            "type":  "softReboot"
+                        },
+                        {
+                            "returnCode":  1641,
+                            "type":  "hardReboot"
+                        },
+                        {
+                            "returnCode":  1618,
+                            "type":  "retry"
+                        },
+                        {
+                            "returnCode":  302,
+                            "type":  "softReboot"
+                        },
+                        {
+                            "returnCode":  145,
+                            "type":  "hardReboot"
+                        }
+                    ]
+}
