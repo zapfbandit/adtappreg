@@ -24,6 +24,20 @@ function Get-DefaultAppInfo {
     $info
 }
 
+function Get-TargetId {
+    param (
+        $name
+    )
+    
+    $map = @{
+        "Hardware" = "0"
+        "Software" = "1"
+        "Engineers" = "2"
+    }
+    
+    $map.Get_Item($name)
+}
+
 function Create-AppInfo {
     param (
         $IntunePackagePath,
@@ -40,10 +54,39 @@ function Create-AppInfo {
     $app.displayName = "$($appInfo.applicationName) ($($appInfo.Version))"
     $app.description = $appInfo.description
     
+    # calc install info
+    if ([bool]$appConfig.installInfo.PSObject.Properties["msi"])
+    {
+        Write-Host Hello world!
+    }
+    
+    # calc assignments info
+    $assignments = @()
+    foreach ($target in $appConfig.assignments.available)
+    {
+        $assign = @{ "@odata.type" = "#microsoft.graph.mobileAppAssignment" }
+        $assign.intent = "available"
+        $assign.target = @{
+            "@odata.type" = "#microsoft.graph.groupAssignmentTarget"
+            "groupId" = Get-TargetId $target
+        }
+        $assign.settings = @{ "@odata.type" = "#microsoft.graph.win32LobAppAssignmentSettings" }
+        $assign.settings.notifications = "showAll"
+        $assign.settings.restartSettings = $null
+        $assign.settings.installTimeSettings = $null
+        $assign.settings.deliveryOptimizationPriority = "notConfigured"
+        
+        $assignments += ,$assign
+    }
+    
     $appInfo = @{
         app = $app
-        assignments = $null
+        assignments = $assignments
+        commit = $null
+        file = $null
     }
+    
+    $appInfo
 }
 
 # Testing
