@@ -8,9 +8,7 @@ appVersion: "1.2.3.4"
 # Which users should be able to install the application
 assignments:
   available:
-    - Hardware
-    - Engineers
-    - Software
+    - TestGroup # valid values: TODO
     
 # Info on how to install application
 installInfo:
