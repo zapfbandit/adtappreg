@@ -15,7 +15,7 @@ installInfo:
   setupFile: wsl_update_x64.msi
   runAsAccount: user # valid values: system, user
   
-  # Choose one of the below
+  # Choose one of the below, and delete the others
   msi: 
   installer: # for things like setup.exe
   custom: # for maximum power
