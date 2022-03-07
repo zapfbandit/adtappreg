@@ -591,14 +591,29 @@ function Create-AppInfo {
 
 function Add-Application {
     param (
-        $IntuneFile,
+        $SetupFilesFolder,
         $Config
     )
     
     $appConfigContents = Get-Content -Path $config -Raw
     $appConfig = ConvertFrom-Yaml $appConfigContents
     # TODO: validate appConfig contents/format
-
+    
+    # create intune file
+    Write-Host
+    Write-Host "Creating application intune file..." -ForegroundColor Yellow
+    $tempDir = "C:\adt_temp"
+    if (Test-Path $tempDir)
+    {
+        Remove-Item -path $tempDir -recurse
+    }
+    New-Item -path "C:\" -name "adt_temp" -ItemType "directory"
+    # TODO: call app using absolute path
+    $setupFile = $appConfig.installInfo.setupFile
+    & .\IntuneWinAppUtil.exe -c $SetupFilesFolder -s $setupFile -o $tempDir
+    $intuneFile = Join-Path -Path $tempDir -ChildPath "$($setupFile -replace `"\.[^\.]*$`", `"`").intunewin"
+    
+    # Extract intune info
     $detectionXml = Get-IntuneWinXML $intuneFile -fileName "detection.xml"
 
     $intuneWinFile = Get-IntuneWinFile $intuneFile -fileName "$($detectionXml.ApplicationInfo.FileName)"
@@ -688,7 +703,7 @@ function Add-Application {
 }
 
 # Testing
-$intuneFile = "..\apps\test\wsl_update_x64.intunewin"
+$intuneFile = "..\apps\test\setup_files"
 $config = "..\apps\test\info.yml"
 
 Add-Application $intuneFile $config
