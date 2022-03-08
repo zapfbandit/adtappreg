@@ -740,8 +740,4 @@ function Add-Application {
     Write-Host "Done..." -ForegroundColor Yellow
 }
 
-# Testing
-$localSetupFiles = "..\apps\test\setup_files"
-$config = "..\apps\test\info.yml"
-
-Add-Application $localSetupFiles $config
+Export-ModuleMember -Function Add-Application

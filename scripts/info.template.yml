@@ -1,0 +1,36 @@
+# Comments are allowed!
+
+# Basic application information
+applicationName: ${app_name}
+description: ${description}
+appVersion: ${app_version}
+
+# Which users should be able to install the application
+assignments:
+  available:
+    ${assignments}
+    #- TestGroup # valid values: TODO
+    
+# Info on how to install application
+installInfo:
+  setupFile: ${setup_file}
+  remoteFilesPaths: 
+    - ${app_name_no_spaces}/${app_version}/remote_files
+  runAsAccount: user # valid values: system, user
+  
+  # Choose one of the below, and delete the others
+  ${install_type}
+  #msi: 
+  #installer: # for things like setup.exe
+  #custom: # for maximum power
+
+# The following lists detection rules and requirements rules
+customRules:
+
+# Maps return codes to install result types
+returnCodes:
+  # Below are just examples. It is safe to delete them.
+  - code: 0
+    type: success # Valid values: failed, success, softReboot, hardReboot, retry
+  - code: 99
+    type: failed
