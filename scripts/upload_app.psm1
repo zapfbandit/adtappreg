@@ -598,10 +598,11 @@ function Add-Application {
     # consts?!?
     $storageAcc = "deletetest3"
     $containerName = "intune-app-files"
+    $azcopyExe = Join-Path -Path $PSScriptRoot -ChildPath "azcopy.exe"
+    $intuneWinAppUtilExe = Join-Path -Path $PSScriptRoot -ChildPath "IntuneWinAppUtil.exe"
     
     # TODO: cleanup on failure
     # TODO: handle failure
-    # TODO: user absolute paths when executing programs
     
     $appConfigContents = Get-Content -Path $config -Raw
     $appConfig = ConvertFrom-Yaml $appConfigContents
@@ -628,17 +629,17 @@ function Add-Application {
     # Download remote 
     if ($appConfig.installInfo.remoteFilesPaths -ne $null)
     {
-        & .\azcopy.exe login status
+        & $azcopyExe login status
         if ($LastExitCode -ne 0)
         {
             Write-Host
             Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
-            & .\azcopy.exe login
+            & $azcopyExe login
         }
         
         foreach ($dir in $appConfig.installInfo.remoteFilesPaths)
         {
-            & .\azcopy copy "https://$storageAcc.blob.core.windows.net/$containerName/$dir/*" $setupDir --recursive
+            & $azcopyExe copy "https://$storageAcc.blob.core.windows.net/$containerName/$dir/*" $setupDir --recursive
         }
     }
     # Copy local files
@@ -649,7 +650,7 @@ function Add-Application {
     }
     # TODO: call app using absolute path
     $setupFile = $appConfig.installInfo.setupFile
-    & .\IntuneWinAppUtil.exe -c $setupDir -s $setupFile -o $outputDir
+    & $intuneWinAppUtilExe -c $setupDir -s $setupFile -o $outputDir
     # TODO: this feels very fragile - convert to function so it is easier to fix
     $intuneFile = Join-Path -Path $outputDir -ChildPath "$($setupFile -replace `"\.[^\.]*$`", `"`").intunewin"
     
