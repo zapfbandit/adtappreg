@@ -10,6 +10,7 @@
 [ ] required assignments
 [ ] other assignment targets (e.g. specific users, specific machines)
 [ ] improve script robustness
+[ ] script for 'creating' app info/pull request
 
 ## How to add application
 

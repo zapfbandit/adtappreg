@@ -1,4 +1,5 @@
 Import-Module powershell-yaml
+Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "config")
 # Stolen codes
 ##########################################
 
@@ -10,6 +11,8 @@ $logHeaders = $false;
 $logContent = $true;
 
 $azureStorageUploadChunkSizeInMb = 6l;
+
+$connectionConfig = Get-Config
 
 $sleep = 30
 ##
@@ -258,10 +261,10 @@ NAME: Get-AuthToken
     try {
 
     $authResult = Get-MsalToken `
-      -ClientId "b38ddd50-a3e4-41d5-b380-28ae8444190b" `
+      -ClientId $connectionConfig.auth.clientId `
       -Scope "https://graph.microsoft.com/DeviceManagementApps.ReadWrite.All" `
-      -Authority "https://login.microsoftonline.com/5cf3cef3-9226-48a7-a9a3-106dba222f7c/" `
-      -RedirectUri "msalb38ddd50-a3e4-41d5-b380-28ae8444190b://auth"
+      -Authority $connectionConfig.auth.authority `
+      -RedirectUri $connectionConfig.auth.redirectUri
 
         # If the accesstoken is valid then create the authentication header
         
@@ -477,19 +480,6 @@ function Get-DefaultAppInfo {
     $info
 }
 
-function Get-TargetId {
-    param (
-        $name
-    )
-    
-    # TODO: maybe load from config?!?
-    $map = @{
-        "TestGroup" = "d251b7b9-707e-4ab6-af25-08ef9e447434"
-    }
-    
-    $map.Get_Item($name)
-}
-
 function Create-AppInfo {
     param (
         $AppConfig,
@@ -596,8 +586,8 @@ function Add-Application {
     )
     
     # consts?!?
-    $storageAcc = "deletetest3"
-    $containerName = "intune-app-files"
+    $storageAcc = $connectionConfig.storageAccount
+    $containerName = $connectionConfig.containerName
     $azcopyExe = Join-Path -Path $PSScriptRoot -ChildPath "azcopy.exe"
     $intuneWinAppUtilExe = Join-Path -Path $PSScriptRoot -ChildPath "IntuneWinAppUtil.exe"
     
