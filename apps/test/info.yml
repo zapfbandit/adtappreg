@@ -13,6 +13,8 @@ assignments:
 # Info on how to install application
 installInfo:
   setupFile: wsl_update_x64.msi
+  remoteFilesPaths: 
+    - test/1.1.1.2/remote_files
   runAsAccount: user # valid values: system, user
   
   # Choose one of the below, and delete the others

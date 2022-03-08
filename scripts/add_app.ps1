@@ -591,13 +591,25 @@ function Create-AppInfo {
 
 function Add-Application {
     param (
-        $SetupFilesFolder,
+        $LocalSetupFiles, # TODO: make this a list?!?
         $Config
     )
+    
+    # consts?!?
+    $storageAcc = "deletetest3"
+    $containerName = "intune-app-files"
+    
+    # TODO: cleanup on failure
+    # TODO: handle failure
+    # TODO: user absolute paths when executing programs
     
     $appConfigContents = Get-Content -Path $config -Raw
     $appConfig = ConvertFrom-Yaml $appConfigContents
     # TODO: validate appConfig contents/format
+    
+    Write-Host
+    Write-Host "Getting permissions..." -ForegroundColor Yellow
+    Test-AuthToken
     
     # create intune file
     Write-Host
@@ -608,10 +620,38 @@ function Add-Application {
         Remove-Item -path $tempDir -recurse
     }
     New-Item -path "C:\" -name "adt_temp" -ItemType "directory"
+    New-Item -path $tempDir -name "setup_files" -ItemType "directory"
+    New-Item -path $tempDir -name "output" -ItemType "directory"
+    $remoteDir = Join-Path -Path $tempDir -ChildPath "remote_files" # TODO: unused?!?
+    $setupDir = Join-Path -Path $tempDir -ChildPath "setup_files"
+    $outputDir = Join-Path -Path $tempDir -ChildPath "output"
+    # Download remote 
+    if ($appConfig.installInfo.remoteFilesPaths -ne $null)
+    {
+        & .\azcopy.exe login status
+        if ($LastExitCode -ne 0)
+        {
+            Write-Host
+            Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
+            & .\azcopy.exe login
+        }
+        
+        foreach ($dir in $appConfig.installInfo.remoteFilesPaths)
+        {
+            & .\azcopy copy "https://$storageAcc.blob.core.windows.net/$containerName/$dir/*" $setupDir --recursive
+        }
+    }
+    # Copy local files
+    if ($LocalSetupFiles -ne $null)
+    {
+        $allFilesInFolder = Join-Path -Path $LocalSetupFiles -ChildPath "*"
+        Copy-Item -Path $allFilesInFolder -Destination $setupDir
+    }
     # TODO: call app using absolute path
     $setupFile = $appConfig.installInfo.setupFile
-    & .\IntuneWinAppUtil.exe -c $SetupFilesFolder -s $setupFile -o $tempDir
-    $intuneFile = Join-Path -Path $tempDir -ChildPath "$($setupFile -replace `"\.[^\.]*$`", `"`").intunewin"
+    & .\IntuneWinAppUtil.exe -c $setupDir -s $setupFile -o $outputDir
+    # TODO: this feels very fragile - convert to function so it is easier to fix
+    $intuneFile = Join-Path -Path $outputDir -ChildPath "$($setupFile -replace `"\.[^\.]*$`", `"`").intunewin"
     
     # Extract intune info
     $detectionXml = Get-IntuneWinXML $intuneFile -fileName "detection.xml"
@@ -620,8 +660,6 @@ function Add-Application {
     $fileSize = (Get-Item "$intuneWinFile").Length
 
     $appInfo = Create-AppInfo $appConfig $detectionXml $fileSize
-    
-    Test-AuthToken
     
     # kinda stolen below
     $LOBType = "microsoft.graph.win32LobApp"
@@ -703,7 +741,7 @@ function Add-Application {
 }
 
 # Testing
-$intuneFile = "..\apps\test\setup_files"
+$localSetupFiles = "..\apps\test\setup_files"
 $config = "..\apps\test\info.yml"
 
-Add-Application $intuneFile $config
+Add-Application $localSetupFiles $config
