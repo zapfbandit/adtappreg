@@ -15,7 +15,8 @@ assignments:
 installInfo:
   setupFile: ${setup_file}
   remoteFilesPaths: 
-    - ${app_name_no_spaces}/${app_version}/remote_files
+    - ${remote_files_path}
+    #- ${app_name_no_spaces}/${app_version}/setup_files
   runAsAccount: user # valid values: system, user
   
   # Choose one of the below, and delete the others
