@@ -70,6 +70,8 @@ function Create-AppInfoContent {
 
 $rootDir = Join-Path -Path $PSScriptRoot -ChildPath ".."
 
+pushd $rootDir
+
 & git checkout main
 & git pull
 
@@ -171,3 +173,5 @@ if ($LastExitCode -ne 0)
 & git checkout main
 & git branch -D $appNameVer
 Remove-Item -Path $(Join-Path -Path "$rootDir\apps" -CHildPath $simpleAppName) -Recurse
+
+popd
