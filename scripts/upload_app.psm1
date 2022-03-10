@@ -500,7 +500,7 @@ function Create-AppInfo {
         $app.installExperience = @{ "runAsAccount" = $AppConfig.installInfo.runAsAccount }
         $app.setupFilePath = $AppConfig.installInfo.setupFile
         $app.uninstallCommandLine = "msiexec /x `"$($IntuneDetectionConfig.ApplicationInfo.MsiInfo.MsiProductCode)`""
-        $app.installCommandLine = "msiexec /i `"$($AppConfig.setupFile)`""
+        $app.installCommandLine = "msiexec /i `"$($AppConfig.installInfo.setupFile)`""
         
         $msiExecutionContext = $IntuneDetectionConfig.ApplicationInfo.MsiInfo.MsiExecutionContext
         $msiPackageType = "DualPurpose";
