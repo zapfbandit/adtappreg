@@ -51,7 +51,19 @@ function Create-AppInfoContent {
     
     $output = $TemplateContent
     
-    # TODO: replace tokens
+    $output = $output.replace('${app_name}', $AppName)
+    $output = $output.replace('${description}', $AppName)
+    $output = $output.replace('${app_version}', $AppVersion)
+    $output = $output.replace('${setup_file}', $(Split-Path $InstallerPath -leaf))
+    $output = $output.replace('${remote_files_path}', "$SimpleAppName/$AppVersion/setup_files")
+    $output = $output.replace('${install_type}', "msi:")
+    
+    $ass = "    "
+    foreach ($a in $Assignments)
+    {
+        $ass += "`n    - $a"
+    }
+    $output = $output.replace('${assignments}', $ass)
     
     $output
 }
@@ -116,6 +128,8 @@ $infoContents = Create-AppInfoContent $templateContents $appName $appVersion $si
 $infoContents | Out-File -FilePath $(Join-Path -Path $appDir -ChildPath "info.yml") -Encoding ASCII
 
 # Upload installer
+Write-Host
+Write-Host "Uploading installer..." -ForegroundColor Yellow
 $azcopyExe = Join-Path -Path $PSScriptRoot -ChildPath "azcopy.exe"
 & $azcopyExe login status
 if ($LastExitCode -ne 0)
@@ -126,10 +140,34 @@ if ($LastExitCode -ne 0)
 }
 & $azcopyExe copy $appFile "https://$($connectionConfig.storageAccount).blob.core.windows.net/$($connectionConfig.containerName)/$remoteDir/$(Split-Path $appFile -leaf)"
 
-# Commit and create pull request?!?
+# Hack up apply changes script
+$changes = @"
+Import-Module -Name `$(Join-Path -Path `$PSScriptRoot -ChildPath "upload_app")
 
+`$localSetupFiles = `$null
+`$config = "..\apps\$simpleAppName\$appVersion\info.yml"
+
+Add-Application `$localSetupFiles `$config
+"@
+Set-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\apply_change.ps1") -Value $changes -Encoding ASCII
+
+# Commit and create pull request?!?
+Write-Host
+Write-Host "Creating pull request..." -ForegroundColor Yellow
+& git add $rootDir
+& git commit -m "Adding $simpleAppName"
+& git push --set-upstream origin $appNameVer
+$ghExe = Join-Path -Path $PSScriptRoot -ChildPath "gh.exe"
+& $ghExe auth status
+if ($LastExitCode -ne 0)
+{
+    Write-Host
+    Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
+    & $ghExe auth login
+}
+& $ghExe pr create --title $simpleAppName --body "Please respond" --head $appNameVer
 
 # Done/cleanup
 & git checkout main
-& git branch -d $appNameVer
+& git branch -D $appNameVer
 Remove-Item -Path $(Join-Path -Path "$rootDir\apps" -CHildPath $simpleAppName) -Recurse

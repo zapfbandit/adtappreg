@@ -30,8 +30,8 @@ customRules:
 
 # Maps return codes to install result types
 returnCodes:
-  # Below are just examples. It is safe to delete them.
-  - code: 0
-    type: success # Valid values: failed, success, softReboot, hardReboot, retry
-  - code: 99
-    type: failed
+  ## Below are just examples
+  #- code: 0
+  #  type: success # Valid values: failed, success, softReboot, hardReboot, retry
+  #- code: 99
+  #  type: failed
