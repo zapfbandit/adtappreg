@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>Gabriel Adrian Samfira Alessandro Pilotti</dc:creator>
+  <dc:description>Powershell module for serializing and deserializing YAML</dc:description>
+  <dc:identifier>powershell-yaml</dc:identifier>
+  <version>0.4.2</version>
+  <keywords>PSModule PSIncludes_Function PSFunction_ConvertTo-Yaml PSFunction_ConvertFrom-Yaml PSCommand_ConvertTo-Yaml PSCommand_ConvertFrom-Yaml PSCommand_cfy PSCommand_cty</keywords>
+  <lastModifiedBy>NuGet.Build.Tasks.Pack, Version=5.5.0.4, Culture=neutral, PublicKeyToken=31bf3856ad364e35;</lastModifiedBy>
+</coreProperties>

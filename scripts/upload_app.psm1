@@ -1,4 +1,4 @@
-Import-Module powershell-yaml
+Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "yaml\powershell-yaml")
 Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "config")
 # Stolen codes
 ##########################################

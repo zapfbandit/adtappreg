@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>powershell-yaml</id>
+    <version>0.4.2</version>
+    <authors>Gabriel Adrian Samfira Alessandro Pilotti</authors>
+    <owners>Cloudbase Solutions SRL</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Powershell module for serializing and deserializing YAML</description>
+    <releaseNotes></releaseNotes>
+    <copyright>(c) 2016 Cloudbase Solutions SRL. All rights reserved.</copyright>
+    <tags>PSModule PSIncludes_Function PSFunction_ConvertTo-Yaml PSFunction_ConvertFrom-Yaml PSCommand_ConvertTo-Yaml PSCommand_ConvertFrom-Yaml PSCommand_cfy PSCommand_cty</tags>
+  </metadata>
+</package>
