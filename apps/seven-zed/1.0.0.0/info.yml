@@ -1,26 +1,27 @@
 # Comments are allowed!
 
 # Basic application information
-applicationName: ${app_name}
-description: ${description}
-appVersion: ${app_version}
+applicationName: seven_zed
+description: seven_zed
+appVersion: 1.0.0.0
 
 # Which users should be able to install the application
 assignments:
   available:
-    ${assignments}
+        
+    - TestGroup
     #- TestGroup # valid values: TODO
     
 # Info on how to install application
 installInfo:
-  setupFile: ${setup_file}
+  setupFile: 7z2107-x64.msi
   remoteFilesPaths: 
-    - ${remote_files_path}
-    #- ${app_name_no_spaces}/${app_version}/setup_files
+    - seven-zed/1.0.0.0/setup_files
+    #- ${app_name_no_spaces}/1.0.0.0/setup_files
   runAsAccount: system # valid values: system, user
   
   # Choose one of the below, and delete the others
-  ${install_type}
+  msi:
   #msi: 
   #installer: # for things like setup.exe
   #custom: # for maximum power
