@@ -1,6 +1,6 @@
 Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "upload_app")
 
 $localSetupFiles = $null
-$config = "..\apps\seven-zed\1.0.0.0\info.yml"
+$config = "..\apps\sev-zip\1.0.0.0\info.yml"
 
 Add-Application $localSetupFiles $config
