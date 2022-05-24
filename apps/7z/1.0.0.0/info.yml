@@ -1,0 +1,38 @@
+# Comments are allowed!
+
+# Basic application information
+applicationName: 7z
+description: 7z
+appVersion: 1.0.0.0
+
+# Which users should be able to install the application
+assignments:
+  available:
+        
+    - TestGroup
+    #- TestGroup # valid values: TODO
+    
+# Info on how to install application
+installInfo:
+  setupFile: 7z2107-x64.msi
+  remoteFilesPaths: 
+    - 7z/1.0.0.0/setup_files
+    #- ${app_name_no_spaces}/1.0.0.0/setup_files
+  runAsAccount: user # valid values: system, user
+  
+  # Choose one of the below, and delete the others
+  msi:
+  #msi: 
+  #installer: # for things like setup.exe
+  #custom: # for maximum power
+
+# The following lists detection rules and requirements rules
+customRules:
+
+# Maps return codes to install result types
+returnCodes:
+  ## Below are just examples
+  #- code: 0
+  #  type: success # Valid values: failed, success, softReboot, hardReboot, retry
+  #- code: 99
+  #  type: failed
