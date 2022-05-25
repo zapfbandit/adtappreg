@@ -68,15 +68,12 @@ function GetFile($filePath, $azSrc)
 {
    ShowIt("Download `"$filePath`" from $storageAccountName/$storageContainerName/$azSrc")
    
-<<<<<<< Updated upstream
-   $fileName = $(Split-Path $appFile -leaf)
-=======
+
    $fileName = $(Split-Path $filePath -leaf)
    
    echo "$filePath"
    echo "$fileName"
    echo "$azDest/$fileName"
->>>>>>> Stashed changes
    
    $storageAccount = Get-AzStorageAccount `
       -ResourceGroupName $rgGroup `
