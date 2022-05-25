@@ -92,12 +92,13 @@ function ShowIt($txt)
 }
 
 
-function UploadFile($fileName, $azDest)
+function UploadFile($filePath, $azDest)
 {
-   ShowIt("Uploading `"$fileName`" to $($connectionConfig.storageAccount)/$($connectionConfig.containerName)/$azDest")
+   ShowIt("Uploading `"$filePath`" to $($connectionConfig.storageAccount)/$($connectionConfig.containerName)/$azDest")
    
-   echo "$PSScriptRoot/$fileName"
-   echo "$azDest/$fileName"
+   echo "$filePath"
+   echo "$fileName"
+   echo "$azDest/$filePath"
    
    $storageAccount = Get-AzStorageAccount `
       -ResourceGroupName "Test" `
@@ -114,15 +115,17 @@ function UploadFile($fileName, $azDest)
    Set-AzStorageBlobContent `
       -Context $storageContext `
       -Container $($connectionConfig.containerName) `
-      -File "$PSScriptRoot/$fileName" `
+      -File "$filePath" `
       -Blob "$azDest/$fileName" `
       -Force;
 }
 
 
-function GetFile($fileName, $azSrc)
+function GetFile($filePath, $azSrc)
 {
-   ShowIt("Download `"$fileName`" from $($connectionConfig.storageAccount)/$($connectionConfig.containerName)/$azSrc")
+   ShowIt("Download `"$filePath`" from $($connectionConfig.storageAccount)/$($connectionConfig.containerName)/$azSrc")
+   
+   $fileName = $(Split-Path $appFile -leaf)
    
    $storageAccount = Get-AzStorageAccount `
       -ResourceGroupName "Test" `
@@ -224,7 +227,6 @@ if ($connected -eq $null)
    exit -1
 }
 
-$appFile = $appFile -replace "\\", "/"
 UploadFile $appFile $remoteDir
 
 # Hack up apply changes script
@@ -267,8 +269,8 @@ popd
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCACHuk+u8eZNU0a
-# ve9ujy5HjRGiR5JJ0gLlNChpAlGI0KCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDHTY3zfzE4azyu
+# n/cRK27meSKc4+yAI5vVUoDz13+KOKCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -411,29 +413,29 @@ popd
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCAlzXaQ69RJhcmAig5wgQLAWKOSsyJ2Xo6DB34JyNTUWTAN
-# BgkqhkiG9w0BAQEFAASCAQBdVHVTJUxJCqA54BRHIHcLg8wLdDxqDgbzu1SY9XjK
-# G/PGz1STNhlsRp5RpUMvdlq5lKoFEbOQsoTFXudQSl01lLyRiJTBM9ViyA/+1IR0
-# WxP0CzpW76EseMD99BpFURaR6oWSp5xS7JY28BV+dq+LM/6ciayX0XAfML98Nv0S
-# +u4V1hFlrktDpbQ7S0CzekTJZsjuGhaRle6x2dRWFlt0WjvXTljG1B+bbikl91W0
-# zX+lwhxqnWlwYS9U7tH/zEas+j2tHZ0IrU1dcZLrXcq7mbQQgelR+hY8FU+2AzFR
-# nQgsU/56SIzC4la9XpioMAyrSlyfyG6ARdxoyJzQ+WtBoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCA1RKntsPSNXxZHMd7GIrv7eWkv+6IVaMRYH6O4BEqM2TAN
+# BgkqhkiG9w0BAQEFAASCAQBTmUKvj+ViX6EKltaHt/zlXDnVCcLIHexuNE0hTP9p
+# zebWI/VsozDEOuGvkdsJpHe+CuibcxfshUNGEFIgXV8oSqLQjP/umWo463uEuYpf
+# vTUjwhkwfNPkSI0/USAoxjbdNZTTPTQEa3VDvDHz/8C8/GStQPHdIToh9x1WF3oZ
+# gCjTGHGL9t3NE4pNtw3q3NjPXCn3cdjBu6JnBN7aeSAzfhm420D/Rr74XE3U3Z5c
+# 7JlkfiStIAxTZ59THVnaqADFJhyNYyEPuwocj41dpFKlZlkSdXMuGiyNuL4/x4bd
+# Zlx7ZqZ7Nurkp8DplDQjG1qkNLCWRGrbfD6bLdw0ykS9oYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUwNzE2MDVaMD8G
-# CSqGSIb3DQEJBDEyBDAwKTsUyppRCdnAEDskY6koLuA1A5qCuDgKPRmT7DMN2Voc
-# ncVjIEIiAZKm4WAodeYwDQYJKoZIhvcNAQEBBQAEggIAOdPNq36Ut+XYl0K6AQwM
-# DvLiWNxwwgtpK4nmLnN8+NJE8JZ//fW+UYz/yMxYPqKOBUYPBwRyVqikXh4G1G6m
-# 4j5klLAVMcDWR99BNG1RXALDv89n+zgRFhzwO1lJY9pKNG+7qdqxX7AEHkQWQ2Yd
-# epVCQwOZJV1AkZfztoYFEccu9sZsalDthHIA1v+8eEU3th6Y2lypBmBkk7C6KicN
-# ObpjDpX8vkyb0eJPAZ06C2tl+hB5KUvD0udBS8zLmLWf18NYiTO810xVNDo724Cd
-# Voeh807H2UPGtjsCQRXqJSI48XXb6WAyPf6JLtw3edTSa+uJAwtZhC/0cSoKA4q6
-# +oWbZXupluOgzNm1O7QzzrJ/pYIIt78J3M9FCH+IUnK/kpFKVYtsrDnBl89/JHsN
-# ZPlFtogde04g2xUpvADLAPjoCG6UTuLC6saiMwCLfiOVHzaaGyTdL7QZCml3M2KU
-# wyFDzVt4rNtsBbbEDNPTXzNKIKW7jqoqzRUpI98CEu8+g6cYgFDF6Lz2+4fzOBhf
-# oNApRobd/tIJMy4tcc7CbkBYA6il2JZ6fZ6/7+PY2jVCkqmiKyCrzHuPmHZosi/0
-# 90oRGyRib9HlEKquVLTcwgC9okgRT9SdF61a13tHWn9XqYQA+KZPr2nKMD5S5o10
-# BfuOuQ9JbUd+unJw9+C46GQ=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUwNzI1MjBaMD8G
+# CSqGSIb3DQEJBDEyBDARDd+m8jBr7umG7IOWXg1LjR/6xKxk3W/8Bgk37MMEgHhl
+# qGcON7v5R97u4YmwOTIwDQYJKoZIhvcNAQEBBQAEggIAR4/DOC36q9EukRIWy22g
+# h2zEtwwzl7aH+hWKG079EI4HpDJsOWk2s2TR6Mr4vj8ZIOmKJ7WpdQuWxvJtoumG
+# ioJRCKEnNOxwjjbmv2Cd+dMr0cx7X+O0VwfU+Ve8/r+bWvcSQr8AXg9q9CoZe3VL
+# /YoYRq1PHWDnyEWLBhC4KgQC2oJXR4WCjzuIo/uSK3nz19oRd4X1fNfsKxSBsgji
+# xdMBcEqK+1kgbLMFFGupH3FW5M4nRKyE1WGkVVcaoVG+F2pIlddGzt7lKGeDzcKS
+# N9jsc7LTdy0nbWH8DkLs94HAYWAGgxnZb0foLvmt5aTNItbB3VYX/ZpSbTW3Hs1c
+# 3lpJBABPOf5Y7e+DYal7+RkMOuBNlCKZRp99nlpIdstMhEifzvJ4m267jiJLsR2I
+# TdIM+qo+FQM0FwnBwttn4ayX6lDbIAh8JJ29ZLAjBrEB2irNiYJyzYV3/81yM9f1
+# GpG4mSasw/cLIW/2RTY+c6Iq7G/pKYbq5how8As7YkPYqVh5MBf13SErngiQBNjl
+# Ka19i4h2AscX/qL6crJmjN3TCjQUiTMhGGEHXDxsItY2vrSsr0oL6N1gVq/2kNl4
+# jZPnIlwIVqoWgoztGMLcxRw/gNBQLnbXagPA/JtKocv8kMnxmaCyueiy7Eg3hDXY
+# 0xhFgHmBXgjhOU7yxF5/Uy4=
 # SIG # End signature block
