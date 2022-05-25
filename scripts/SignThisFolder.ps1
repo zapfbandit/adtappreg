@@ -1,15 +1,44 @@
-Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "upload_app")
+#49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
+#                                                                                #
+#  Classification: ADT-PROTECTED/ENGINEERING                                     #
+#  File:           Utilities/ScriptSigning/SignThisFolder.ps1                    #
+#  Modified:       Tue Mar 29 12:35:52 AUSEDT 2022                               #
+#  Author:         igor.dopita@adt.com.au                                        #
+#                                                                                #
+#  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
+#  This code must not be distributed, used, reproduced or modified for any       #
+#  purpose without the explicit permission of ADT.                               #
+#                                                                                #
+#  Copyright and all Rights Reserved ADT RnD Pty Ltd                             #
+#                                                                                #
+#54686973207265616c6c79206675636b696e67206d6174746572732e2e2e2074616b652063617265#
 
-$localSetupFiles = $null
-$config = "..\apps\winzip\1.0.0.0\info.yml"
+$cert = &"./GetCertificate.ps1"
 
-Add-Application $localSetupFiles $config
+if ($cert -ne $null)
+{
+   echo "`nLocating all scripts...`n"
+
+   $logPath = "$PSScriptRoot/Sign.log"
+   Remove-Item $logPath -ErrorAction SilentlyContinue
+
+   $files = get-childitem "." 
+   $scripts = $files | where {($_.extension -eq ".ps1") -or ($_.extension -eq ".psm1")}
+
+   foreach ($script in $scripts)
+   {
+      echo "*********************************************************************" *>&1 | tee -Append $logPath
+      echo $script.FullName *>&1 | tee -Append $logPath
+      echo "*********************************************************************" *>&1 | tee -Append $logPath
+      Set-AuthenticodeSignature -FilePath $script.FullName -Certificate $cert -HashAlgorithm SHA256 -TimestampServer http://timestamp.sectigo.com | Format-list *>&1 | tee -Append $logPath
+   }
+}
 
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDoUOIj0f3uUxfd
-# WPTwEMdKSF5ITfVyt3LXqoAgQUjpD6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBwQTJfQiWN11Jf
+# yZuq61Dj6/P6jineIX9yMf1G+3hAeaCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -152,29 +181,29 @@ Add-Application $localSetupFiles $config
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCAXDCNsCnxsE4MiVFP4yAcay7Y4N6ML6dH6L2CRZV65uzAN
-# BgkqhkiG9w0BAQEFAASCAQAB6AdwRhIjip7y1aLtnQKp1rkrOHtb1n306q/9kwwK
-# Q7xo/nM9axP2M5E3yPngTH/DjNRPe42On7OONGt6d7bI7fM/BxlxRj7ulXTYWuuQ
-# 0Rogg8/8Z87hZY3Gg3v6qz8rqo566WkxZHbBFHEeYXQXaXrVm9a2Qqd352GYFwkn
-# qm1UEHHay/K6QE/Ob8scfHlv8c7MHp8VXKEtLKuT0MHJd19uNIC3llSDlGXIJTC5
-# 81wIDar+DHE55KNcvVyX+zUGpgwzeYBgnOGMF7l+aLj+aqsIAchU1eYlKZqBPOd4
-# O8swuWsPzmEXa+rh8Cd+GmkxjqynUJKhI4Gzo53NkLHvoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCCMohmCKcZXgZzNEB4xhGtQcwIsSTC6Azm180EsH0kIajAN
+# BgkqhkiG9w0BAQEFAASCAQAR2boa6EO2Kzxp0/ofkeaaCgVfj7sNWh5JQgXAYc4R
+# fj4tM8PNm1SuojEXWdYhwX5btoOu2cISNN7CTr9p24ToQRFUzMmNTazYvbcpSjr4
+# IidNHTUzYWka9qM+V3uTZDfzO5QW2Ikxps7/43NLFQ0gC1b3wHnvGV6c8qvUGEtK
+# TLHSBmyuM3qMBAshGLEN6NkCg68G2MFaVE/Ejnv64+CJL19oavT2IUHLVMpTx8BZ
+# qLLl9crvm57NvkG7wQWUlvysVS92umzeAHLO2fXk+sOuMW1m3xUJ+EMrMhBljQzi
+# CQnIP+q8BitWZR3rH61O2+jP1wt/6nEfUyRgjfDxWgmaoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUwNjM1NTZaMD8G
-# CSqGSIb3DQEJBDEyBDAIY2lWYNVNoGYXEAnE26ya7PSvpVYc4L0qBeErJ6m3ScUd
-# TYlZTsqTGQEeke7PYEkwDQYJKoZIhvcNAQEBBQAEggIAGzSqBohRY+xEeR9+2Wam
-# 0WoX7s+rmmHj1O+xDPsvk6BImoDLFCw71kiGT9ATn8uokWjN48iLcpyktalnDHlp
-# ZcCvegR3ilylhaEkpzb53McchYmsaZdLlNgPIz3UeRArYFUmwM+erS6AJbjen8vl
-# 6YjiGw65a1dx/n/QnGD5vI6d2Jpf8nUXfnesPrjxJYpuj2t7TQf20aD7eS3Xtlbv
-# /MVXc7BTU8+EDWV7VZu2bwDVSMF04SAIhMrwwQSzi2PCmwvDt7K2oOHBO24+skqe
-# S2za4Aid9TIC6u5nts8qtAHchxbcPH1oGSsDKOBIwV3pA9oQu8+OOmJACZW7LfJ9
-# 9nwS6wJD3PRK/c+vTG/T/Xjf5yPBWWzBYGwMRbXIGU8av3ViN2fqWA+isIV+7kIr
-# OkQZiiCGY+eqo+gBamb9yKPzkmVCpFJIQNSj+uFCS+bIs4WuExO2eL+t01WVZkG8
-# Ehrx+TeToe3kwkKcBYdsp/QzyFHp31kmN3hJxIZ4aJY2si68iMpmRoc+dP9JrFVi
-# etll2hhcE/KchSrFKjuZmUnoYOBQJr60rqjeOHIl1HLVfFMCvuV/JgjcbaooL1IG
-# ZwlW9an+Qkd1DzEODLF+WlwyC/fb4kYwaX0R10X5cftPi2sN4zhuCBzJUQs21oNS
-# ucmAZLkbPYPsM6hI0DolK9Y=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUwNjM2MTFaMD8G
+# CSqGSIb3DQEJBDEyBDDGRlHIx7CZmlb6iYnMylDXO/eKCfDuxp912Af+rKRS4+TJ
+# nm81LEkL/3451hRWZ9swDQYJKoZIhvcNAQEBBQAEggIAenBP0EKDNJtGQDErXV+h
+# ZMgBMFBE2mC8E9tfJwikVe9dgWEboN+HqIdg7KhScx2330mnwWUDPjjmMy10C8vl
+# OH1IRP+6J9NKm0VTrsOY/5pbvT2YxaiKa6raGJk+ENkh4f8Dxihyy8o4ONPB/9qK
+# 3XDMOpnDNvRn0BCBi0I116ftmowFLJBa8yZK3miqrwiNSvVRrNAfVINuWBkKyaFn
+# ftvhYysi7PTy/JEZB9ek4c+/IEB83xyHEipiXyvaxzcYk05GIbEoI6HB/ztLAOvF
+# Fz/XihJoflrEeeDQDhkuSTfZLkB4mOoL8M+ZUO3NAhUdtIcdHgwFCbmQKHmvPwTK
+# Tavt+5kS5pmSWosw55K8xxN4Tgc7vMmmCxOxqL7eqKMnAN7E+PaxSlM0RfWYZ1vA
+# uvQHJAnKg+5HQHna2mKOOXXMVp5B45oqWfep2t6mtaA9Wd1tfOwDfEMd713ZkaGQ
+# QHERoGmNkerh4vrkUxVUHnJ0v/w5JPwh/yaiqlPxJFB09TAZUeOTnozlJBItpLKq
+# y+K9D2KUhJN0RtPONzUoOJkBmFMgEE1PV5+RbdlVE/0Q4YhX9Aqvzi29cZU0GILR
+# bPp1C+/lIRxvnAqZjuSU2JTzdlQzix95jDm0J4u5NR5zZ/Z5+/xtrP2xA6MJra4R
+# eoNl/HiWNiv6kViZ53m+RyE=
 # SIG # End signature block
