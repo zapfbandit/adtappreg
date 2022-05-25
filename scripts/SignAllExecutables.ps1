@@ -1,8 +1,8 @@
 #49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
 #                                                                                #
 #  Classification: ADT-PROTECTED/ENGINEERING                                     #
-#  File:           Utilities/ScriptSigning/GetCertificate.ps1                    #
-#  Modified:       Tue Mar 29 12:35:45 AUSEDT 2022                               #
+#  File:           Utilities/ScriptSigning/SignAllExecutables.ps1                #
+#  Modified:       Tue Mar 29 12:35:46 AUSEDT 2022                               #
 #  Author:         igor.dopita@adt.com.au                                        #
 #                                                                                #
 #  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
@@ -13,64 +13,73 @@
 #                                                                                #
 #54686973207265616c6c79206675636b696e67206d6174746572732e2e2e2074616b652063617265#
 
-$cert = $null
+$maxCmdLen = 30000
 
-Get-Variable true | Out-Default; Clear-Host;
+$cert = &"./GetCertificate.ps1"
 
-$certs = Get-ChildItem -Path 'Cert:\CurrentUser\My' -CodeSigningCert
-
-if ($certs.Count -gt 0)
+if ($cert -ne $null)
 {
-   $certNum = 0
-   
-   if ($certs.Count -gt 1)
-   {
-      do
-      {
-         Write-Host "Please select the certificate to use:`n"
-         
-         $id = 1
-         foreach ($cert in $certs)
-         {
-            Write-Host "$id`:"
-            $desc =  $cert | Format-list -Property Subject | Out-String
-            Write-Host $desc
-            $id++
-         }
-         
-         $certNum = Read-Host -Prompt "`nPlease enter the certificate number to use"
-         $certNum = [int]$certNum - 1
-         
-         Get-Variable true | Out-Default; Clear-Host;
-         
-         if (($certNum -lt 0) -or ($certNum -ge $certs.Count))
-         {
-            Write-Host "Invalid selection, please try again...`n"
-         }
-      }
-      until (($certNum -ge 0) -and ($certNum -lt $certs.Count))
+   echo "`nLocating all executables...`n"
+
+   $repoDir = git rev-parse --show-toplevel
+   cd $repoDir
+
+   $logPath = "$PSScriptRoot/Sign.log"
+   Remove-Item $logPath -ErrorAction SilentlyContinue
+
+   $certPath = "$PSScriptRoot/ADT Code Signing.cer"
+   Export-Certificate -Cert $cert -FilePath $certPath
+
+   $files = get-childitem $repoDir -recurse 
+   $exes = $files | where {$_.extension -eq ".exe"}
+   $dlls = $files | where {$_.extension -eq ".dll"}
+   $items = {
+      $exes,
+      $dlls
    }
    
-   $cert = $certs[$certNum]
+   $numFiles = 0
+   $fileList = ""
    
-   Get-Variable true | Out-Default; Clear-Host;
+   foreach ($item in $exes)
+   {
+      echo "*********************************************************************" *>&1 | tee -Append $logPath
+      echo $item.FullName *>&1 | tee -Append $logPath
+      echo "*********************************************************************" *>&1 | tee -Append $logPath
+      
+      if ($fileList.length -gt $maxCmdLen) # Send it if we've reached a maximum length (blame Powershell ;-)
+      {
+         echo "Signing batch of files..." *>&1 | tee -Append $logPath
+         $fileList = $fileList.replace(" ", "`" `"")
+         signtool sign /f "$certPath" /fd SHA256 /tr http://timestamp.sectigo.com /td SHA256 $fileList *>&1 | tee -Append $logPath
+         $fileList = ""
+      }
+      
+      if ($fileList -ne "")
+      {
+         $fileList += " "
+      }
+      
+      $fileList += "`"" + $item.FullName + "`""
+      
+      $strLen = $fileList.length
+      
+      $numFiles++
+      echo "$numFiles ($strLen / $maxCmdLen)"
+   }
    
-   Write-Host "Using the following certificate:`n"
+   echo "Signing batch of files..." *>&1 | tee -Append $logPath
+   $fileList = $fileList.replace(" ", "`" `"")
+   signtool sign /f "$certPath" /fd SHA256 /tr http://timestamp.sectigo.com /td SHA256 $fileList *>&1 | tee -Append $logPath
    
-   Write-Host $cert
+   pause
 }
-else
-{
-   Write-Host "No Code Signing Certificate was found."
-}
-
-return $cert
 
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBRtG5BLaEtUvuh
-# EOzjvRyLUkKlfXD4hTdyvmG/3r3bTqCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCgcpzl3LfFq2xx
+# 3P/popDZG8/ZWd/vuKvLIpABUtO40qCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -213,29 +222,29 @@ return $cert
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCBuUs2cepZqYDlCCzzhkKCwQU8FebDA0qc/SyAK+Stk5DAN
-# BgkqhkiG9w0BAQEFAASCAQBbAw5CObp5SAD/E5geUPhFLO9635MNQd4CUZBjodMD
-# 6uCWMe6eutDsn2ErJKsc0lEIPfn26IcpqCZ2NZIUDKG/+P1ssVC1peYaCnVaMYe+
-# xzZgzHGB26Rd9Xikd/SbNx0V4nhqi/MGt7G3A8NFr0SwRxWVm8+92qY0QmcztONz
-# KMBEpKVvUKYinxI/AjANpMpTzz7wzcNTAMQ44TcoJb2j1Zhx4At9xs8wtZH/nx+K
-# M1pgbjUqE0b8AG3tGWmTtsyLNUo3HV1Lq6s4u87qLxGPxPOf6Qkr0lgME9haABWO
-# 4cBQiFJ+ioPlh/cjX/IopF/AztmWg81niYDX+ZbRlwwgoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCCqMNp0U4eKXxocu39IBTiXLtr7nmF+diNYLJd9/ofnhzAN
+# BgkqhkiG9w0BAQEFAASCAQAv+M9q92gKuidj3J+JCO/EvVLGNBSBXZjYfvQDcpLy
+# JPfjAtxlw1Pb2m98hqgZjr7OO2vI1Hsd2iVAWfPDxpdgBRkaMIi+BMySOIXImZJD
+# 2/VTMyfjUhqcCzonNN1m6QUbMujCatzOpoc4Leu458QU8xrnTvxUEmPJbJDKiVNh
+# 7bo8Eco9CGisLiCEdDQzHBwVyiMiUM+DjJiVoFKSe6OAVMRnDcOkKS8/1jLHq9W7
+# q8XlBx34xWE/L6EgR/zXt7uVpXUR8lQeRs5ztjriLG5cP61DFK4IXmaHDItVYRpG
+# OhbkbqKJaTbltPh1EnybeE1KtmjPSSeFTKJLwx4WFhDioYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUyMzA3MTdaMD8G
-# CSqGSIb3DQEJBDEyBDAk/nn3WPYo3NmzKXNbd74lvBvtCdbcrEKMz3exbBQ5QVZx
-# bdQDJB9f1CjJsih5d4EwDQYJKoZIhvcNAQEBBQAEggIAV0gTpeKeVlKTkoE8iIsu
-# JZt1EoZk4rhd0Rg6W3Yt8261kKf5xKpEl73Cnyzbj9eJWJBcZZT60bqpRGhgXGlK
-# Mcp4c9i9JiTaWaHFfJAMt6zumWBWO8nclC+RvxoY+o4V2fLlhJ27xStU12RoWGdo
-# MmQVgcnnEdy7DxKafjSxV+RFFiL9jrpvFyDGiUCw2I5NvEQeivkO0WWHFh8qEgJa
-# Ug796ke/IVT9R7PZrjTsmNK9vsedGaEnNnvL7J830dvoZcUsA7qX+3zS2hqsi9wn
-# 1bbnEhipjpt++VTOqFgqBcN+Bx6syYj/2+YYEWjfC/0IBIISglQXAY16nWf0N8E/
-# xl8O6Wj7JRJrxZl8bWO2WMQ+LJapUk6s2o89/JnnxnGmtKacH5dStWQAq4rKYj8v
-# prhlUkC0OJHEvo7wtMPuMfiTRgE6dFEv1QGtGu8rKaobFx3DnVLnt+RHsQ7qktmm
-# V5U/sIRk1HlPB7hdu0RGrGPckLsi9krYWRI2YK/N8aPx+/kW1lkB28wcymP8hB4C
-# 76MDLLhGeZwvsK/vIQi0LuCNpmtrIXm9goOnxETSFTPXbIVzdp2DiEZIZxE4d4//
-# P9xbMdZOQfDHeFi0TVhoK/gerj6hwkqqMj99jpQNnFVWPT/YPxkXwQsbvNp5QHvW
-# G/nILdjwNaic1VPR/HgnIj8=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUyMzA3MjBaMD8G
+# CSqGSIb3DQEJBDEyBDBOFnGgFjErlYBJlY76nnGKs4MLloIlbucNO5eUqiY9xD9i
+# tYTN/nIQzEb3laU6U/YwDQYJKoZIhvcNAQEBBQAEggIAAAlpWfI6lUOuc3Ij489p
+# vfgZ9MUDKkgI7qi4ABGynbrA4EyqJ8LZdxtnmczirFaJuL8Vae//mLLcK/wsz0Oz
+# Qf2tPVtnUS4/vPCmIQW/oYlGvQB/O6ciFHUwiY5cwliU2oF2b4twhQkOyR3LS5ty
+# v8COLTpBwFr+m6tOnHdJWII7EmzuK/5EO7t6hzs7IhTM9z6atDhf2ggKRUt1pxxa
+# ASxAPRxLPsIVhMGnWmkJ2XYVbwo3LcQUB09HgnnAv/KtoEqljg1p2aK1kxfhTius
+# fu94lrtzH0SKHTXBhWnl+5wdF5RC8Qx2oPn8/5ggC5vHAka6i4z6P4B0XNo7H3R4
+# PYDv6HCzhkMkgf+ixk8Q2ZN8Jb2ukZ6aOg2J0ivy1mO5ZpV1SCDtApBF1hRtV5Sw
+# 8QE8qr4HajDRQgZwRcLqzgmzntaob9wvy66MIBYq2OjTQX5ODPapACLjTW3x+wjr
+# v6v1pvawXedD9B+w7BwQ3IFadzxm6cw1droK3loxCtCk0zqKU7vGG5gv1km5EE03
+# Fk3gUPg9BZad9I0zyj46R20jqV3T1qQSA10bLGzA3nm/ndwjGknN9npkM/Mw+x4n
+# 8AVeYEe1oiNKGNVw03wcGlwaTdYQXoDXsAzh96Kf4tQrNj61gTiGmd2DuuEZSoCC
+# uizMKbwZubvmuMXs2gwNzwg=
 # SIG # End signature block

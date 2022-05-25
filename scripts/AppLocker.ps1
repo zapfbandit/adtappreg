@@ -1,8 +1,8 @@
 #49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
 #                                                                                #
-#  Classification: ADT-PROTECTED/ENGINEERING                                     #
-#  File:           Utilities/ScriptSigning/GetCertificate.ps1                    #
-#  Modified:       Tue Mar 29 12:35:45 AUSEDT 2022                               #
+#  Classification: ADT-CONFIDENTIAL/ENGINEERING                                  #
+#  File:           Installers/IsoCreator/AppLocker.ps1                           #
+#  Modified:       Wed May 25 15:40:50 AUSEST 2022                               #
 #  Author:         igor.dopita@adt.com.au                                        #
 #                                                                                #
 #  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
@@ -11,66 +11,101 @@
 #                                                                                #
 #  Copyright and all Rights Reserved ADT RnD Pty Ltd                             #
 #                                                                                #
-#54686973207265616c6c79206675636b696e67206d6174746572732e2e2e2074616b652063617265#
+#4f7572732c2062757420776520776f6e74206265206675636b6564206966206974206c65616b730a#
 
-$cert = $null
 
-Get-Variable true | Out-Default; Clear-Host;
+function CreateAppLockerPolicy {param([string]$sid, [string]$appLockerXmlPath, [string]$folderPath)
 
-$certs = Get-ChildItem -Path 'Cert:\CurrentUser\My' -CodeSigningCert
+   Write-Output "**************************************************************************"
+   Write-Output "Creating Applocker configuration `"$appLockerXmlPath`""
+   Write-Output "**************************************************************************"
 
-if ($certs.Count -gt 0)
-{
-   $certNum = 0
+   $hashRegExp = "^SHA256 (.*)$";
+
+   Remove-Item $appLockerXmlPath -ErrorAction SilentlyContinue
    
-   if ($certs.Count -gt 1)
-   {
-      do
+   echo "<AppLockerPolicy Version=`"1`">`n" > $appLockerXmlPath
+   
+   $allFiles = get-childitem $folderPath -recurse
+
+   $types = @("Exe", "Msi", "Dll")
+   foreach ($type in $types)
+   {      
+      $files = $allFiles | where {$_.extension -like ".$type"}
+      
+      if ($files.Count -gt 0)
       {
-         Write-Host "Please select the certificate to use:`n"
+         $fileHashBody = ""
          
-         $id = 1
-         foreach ($cert in $certs)
+         foreach ($file in $files)
          {
-            Write-Host "$id`:"
-            $desc =  $cert | Format-list -Property Subject | Out-String
-            Write-Host $desc
-            $id++
+            $filePath = $file.FullName
+            
+            $signInfo = Get-AppLockerFileInformation -path $filePath
+            if ($signInfo -ne $null)
+            {
+               $fileInfo = Get-ChildItem $filePath
+                  
+               $fileName = $fileInfo.Name
+               $fileSize = $fileInfo.Length
+               
+               $hashInfo = $signInfo.Hash
+               
+               $ok = $hashInfo -match $hashRegExp
+               if ($ok -eq $true)
+               {
+                  $hash = $matches[1]
+               }
+               else
+               {
+                  Write-Information "Hash reg exp didn't match for $filePath ($hashInfo)" -InformationAction Continue
+               }
+               
+               if ($fileHashBody -ne "")
+               {
+                  $fileHashBody += "`n"
+               }
+               $fileHashBody += "          <FileHash Type=`"SHA256`" Data=`"$hash`" SourceFileName=`"$fileName`" SourceFileLength=`"$fileSize`" />"
+            }
+            else
+            {
+               Write-Information "Unable to gather app locker info for $filepath" -InformationAction Continue
+            }
+         }
+
+         $guid = [guid]::NewGuid().ToString()
+
+         $fileHashHeader = @"
+    <FileHashRule Id=`"$guid`" Name=`"$name`" Description=`"$name`" UserOrGroupSid=`"$sid`" Action=`"Allow`">
+      <Conditions>
+        <FileHashCondition>
+"@
+              
+         $fileHashFooter = @"
+        </FileHashCondition>
+      </Conditions>
+    </FileHashRule>
+       
+"@
+
+         echo "  <RuleCollection Type=`"$type`" EnforcementMode=`"Enabled`">`n" >> $appLockerXmlPath
+         
+         if ($fileHashBody -ne "")
+         {
+            echo $fileHashHeader $fileHashBody $fileHashFooter >> $appLockerXmlPath
          }
          
-         $certNum = Read-Host -Prompt "`nPlease enter the certificate number to use"
-         $certNum = [int]$certNum - 1
-         
-         Get-Variable true | Out-Default; Clear-Host;
-         
-         if (($certNum -lt 0) -or ($certNum -ge $certs.Count))
-         {
-            Write-Host "Invalid selection, please try again...`n"
-         }
+         echo "  </RuleCollection>`n" >> $appLockerXmlPath
       }
-      until (($certNum -ge 0) -and ($certNum -lt $certs.Count))
    }
-   
-   $cert = $certs[$certNum]
-   
-   Get-Variable true | Out-Default; Clear-Host;
-   
-   Write-Host "Using the following certificate:`n"
-   
-   Write-Host $cert
-}
-else
-{
-   Write-Host "No Code Signing Certificate was found."
-}
 
-return $cert
-
+   echo "</AppLockerPolicy>" >> $appLockerXmlPath
+}
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBRtG5BLaEtUvuh
-# EOzjvRyLUkKlfXD4hTdyvmG/3r3bTqCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCApc43hYwNgn4TN
+# 3Psl5wYo9xL74yYxnO2TLpc/7sNPgaCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -213,29 +248,29 @@ return $cert
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCBuUs2cepZqYDlCCzzhkKCwQU8FebDA0qc/SyAK+Stk5DAN
-# BgkqhkiG9w0BAQEFAASCAQBbAw5CObp5SAD/E5geUPhFLO9635MNQd4CUZBjodMD
-# 6uCWMe6eutDsn2ErJKsc0lEIPfn26IcpqCZ2NZIUDKG/+P1ssVC1peYaCnVaMYe+
-# xzZgzHGB26Rd9Xikd/SbNx0V4nhqi/MGt7G3A8NFr0SwRxWVm8+92qY0QmcztONz
-# KMBEpKVvUKYinxI/AjANpMpTzz7wzcNTAMQ44TcoJb2j1Zhx4At9xs8wtZH/nx+K
-# M1pgbjUqE0b8AG3tGWmTtsyLNUo3HV1Lq6s4u87qLxGPxPOf6Qkr0lgME9haABWO
-# 4cBQiFJ+ioPlh/cjX/IopF/AztmWg81niYDX+ZbRlwwgoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCBMTXfu+saEUdHaACeS4brxnft8H31PDLz50GzN28+ziTAN
+# BgkqhkiG9w0BAQEFAASCAQCDGppzIdU7l7uHL9dabg/EjctWBixIOcnF6CRvRCfi
+# kMUloWJ3zQ1fOIZLPyORc1PFHlORKoS+iCf0V2l4AuRzbPdhL55j/HYCzKXLiHTX
+# bEf7z/kbVLUKERTK0bMSCJAYnhqJEnC6fY1jsPbNfxlJMGENgbL3OAa8JwNGYW10
+# +zf3U+PYNeefz4ylouPrlZ9njqyfIKmc+EXr1On8osF7neJvXQQuW84zdyNF5jsA
+# 3L3GvLNSFjgDIFmqqfPIjKtgT4v0UhrSIJrddCskEyPHJx5elDFl4sUXWIxJsPtV
+# n5e1yzYOzkpO9zNuiAXUMgYjPND8vGhGE4U0Ju2iReKsoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUyMzA3MTdaMD8G
-# CSqGSIb3DQEJBDEyBDAk/nn3WPYo3NmzKXNbd74lvBvtCdbcrEKMz3exbBQ5QVZx
-# bdQDJB9f1CjJsih5d4EwDQYJKoZIhvcNAQEBBQAEggIAV0gTpeKeVlKTkoE8iIsu
-# JZt1EoZk4rhd0Rg6W3Yt8261kKf5xKpEl73Cnyzbj9eJWJBcZZT60bqpRGhgXGlK
-# Mcp4c9i9JiTaWaHFfJAMt6zumWBWO8nclC+RvxoY+o4V2fLlhJ27xStU12RoWGdo
-# MmQVgcnnEdy7DxKafjSxV+RFFiL9jrpvFyDGiUCw2I5NvEQeivkO0WWHFh8qEgJa
-# Ug796ke/IVT9R7PZrjTsmNK9vsedGaEnNnvL7J830dvoZcUsA7qX+3zS2hqsi9wn
-# 1bbnEhipjpt++VTOqFgqBcN+Bx6syYj/2+YYEWjfC/0IBIISglQXAY16nWf0N8E/
-# xl8O6Wj7JRJrxZl8bWO2WMQ+LJapUk6s2o89/JnnxnGmtKacH5dStWQAq4rKYj8v
-# prhlUkC0OJHEvo7wtMPuMfiTRgE6dFEv1QGtGu8rKaobFx3DnVLnt+RHsQ7qktmm
-# V5U/sIRk1HlPB7hdu0RGrGPckLsi9krYWRI2YK/N8aPx+/kW1lkB28wcymP8hB4C
-# 76MDLLhGeZwvsK/vIQi0LuCNpmtrIXm9goOnxETSFTPXbIVzdp2DiEZIZxE4d4//
-# P9xbMdZOQfDHeFi0TVhoK/gerj6hwkqqMj99jpQNnFVWPT/YPxkXwQsbvNp5QHvW
-# G/nILdjwNaic1VPR/HgnIj8=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUyMzA3MTFaMD8G
+# CSqGSIb3DQEJBDEyBDCSOJhm3dIDfI8ONP5vxJB5DmtSMPkq0Fh4xjnhdnqiDCCM
+# X+Si4BwSliWFXV2p1oIwDQYJKoZIhvcNAQEBBQAEggIAGAWy4CS1/dzzIIYDzyT1
+# 1wtLMnjIunP9LxyAOUfvAkXNQN6gLq10zatpJtW6va4i8kv9+IXDUGi+VDVG/rP5
+# GXuKfUR65gm8AcfDOFkeTFJVL9KJG7FLqO5l1dn3FvuO93APWf7kB2PsO0E491Bq
+# +MZ9WS5WI6w+RBLH9CZVrEAhrc8X1bCyeMjFFLp6VJ1qjwsPJSInz0NB0eqoL7Cn
+# NDrq1+tKQ0PW6LUdG8wIdvTtKjaLDpcUZmm0JRTjRXtk2h1Z0MV+iYcS5Ei8DoBu
+# ehnkEvzx4agMhPS+RCaMxJ6s/xOvz41djhsaBhSerSLhG+1Wb6BjJALbJbNVwk3b
+# WA10R+QxrTWd2RcU+xKYU2MyKM3UaOpoH5B5iajScQNet+I+j+irlWbT2c00Wh7x
+# T9RN5vlcNxYvDz8oKm7upJ5G7tHpRgiMQViEhpnE+lRMuxoM/qKb8RUiuUa+7tQA
+# 6nTt7XKWXKkkQ34HjwJkQAO7wM+jD0RNkQ/AbUvsq/bf5vDz+xF0vf1aquCr1m/v
+# gz3mwaR0CfFaECKFvp6KSNjow19XKV6+nDjZxmQ94vqx9ekniBOkWu29BBC70Mac
+# ypZrCPLmRqzUeblp7e2A3P5+XLALKpAXYMKEP800QIps+HmnDxNavmIHZL4/FoX2
+# PEtJvBjehXqIelr1YA9BURM=
 # SIG # End signature block

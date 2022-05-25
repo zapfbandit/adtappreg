@@ -41,7 +41,7 @@ function UploadFile($filePath, $azDest)
    
    echo "$filePath"
    echo "$fileName"
-   echo "$azDest/$filePath"
+   echo "$azDest/$fileName"
    
    $storageAccount = Get-AzStorageAccount `
       -ResourceGroupName $rgGroup `
@@ -68,7 +68,15 @@ function GetFile($filePath, $azSrc)
 {
    ShowIt("Download `"$filePath`" from $storageAccountName/$storageContainerName/$azSrc")
    
+<<<<<<< Updated upstream
    $fileName = $(Split-Path $appFile -leaf)
+=======
+   $fileName = $(Split-Path $filePath -leaf)
+   
+   echo "$filePath"
+   echo "$fileName"
+   echo "$azDest/$fileName"
+>>>>>>> Stashed changes
    
    $storageAccount = Get-AzStorageAccount `
       -ResourceGroupName $rgGroup `
@@ -206,8 +214,13 @@ function LocateStorage
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
+<<<<<<< Updated upstream
 # KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBeocw9nGvv6cMr
 # CFR2FavSWfzFniCuug5583wMhHreg6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
+=======
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA6xEoUSVTBiUaG
+# bGAOA39BWtegv+kBHnL4NqXYQrd+6qCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+>>>>>>> Stashed changes
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -350,6 +363,7 @@ function LocateStorage
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
+<<<<<<< Updated upstream
 # CSqGSIb3DQEJBDEiBCCOfOoXKoMkj8RxO8Y/fGZana1ffaR0CsD1gnbH258vUjAN
 # BgkqhkiG9w0BAQEFAASCAQB8Q5T5Yw8P44HbN4njVVG0LtYKagWSDYNpDZexYlb/
 # SkiH/QpJlXU1OvIM7EU2osRG70vxEIsIpJCbrDpbe/s/ciRb+COK9JPNCM314E8T
@@ -357,10 +371,20 @@ function LocateStorage
 # QiORA3/jP6Xv3ZAWqVASXAmi6ZeBRwKIhbNsm36c2m+3nvxwGCqh+0LVBEu5VAf9
 # YIdxHNukW87fHriquI/B8WTssNFNRwFuj9G1GCGCzAqeZ/1ecVDWscFQTtVjKfR2
 # s66hCwZs8WvN6C1ZLwO8Zs9Yh5J5TPzV9crCumG9TUtroYIDTDCCA0gGCSqGSIb3
+=======
+# CSqGSIb3DQEJBDEiBCCcBdt6tc3uzXBT3ulYwWMxOrNswjr+f1dLJ1tEcu2BgTAN
+# BgkqhkiG9w0BAQEFAASCAQAoMZzgKVV436gHexzTOJz4nXP0EIlUV07TzRqN3bwa
+# CruItI3SVayXxJR25wmgAsng41H2lL9xp4drRTCiXTSFfyTmzJ0gpnMr+vpbViYd
+# Mn/ceQ35eqtY3sKJhw5R0N3pGvCW2A1+R90WAt6Oxl2RkxDaAbakt69d6CLdUUFZ
+# 7GLqsznUThuZZHFQw+dYvEwLbJtpHcLjSypHLSY/J0l1DQAhgpFGuUrN04cyqgyV
+# 4Nbyf2JCY+k/WSPrW2RAG4SVkR/bZ+CJORx/zEHFUXfuprpDWVh5urBOl6jApxRx
+# BVX7BIbiTG/yBUCS0+WFDHuJWU3+NW0wGQGgsF4KPhazoYIDTDCCA0gGCSqGSIb3
+>>>>>>> Stashed changes
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
+<<<<<<< Updated upstream
 # CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUxMjQ2NDJaMD8G
 # CSqGSIb3DQEJBDEyBDBb36s5PdDdGJHwxLWtAxnMXTAVHYUCL1UmH9JzbSUh7Lun
 # 3jFvaX9j0P3Av3sOXikwDQYJKoZIhvcNAQEBBQAEggIAhMm0viO9Y86HyBXUAjk5
@@ -375,4 +399,20 @@ function LocateStorage
 # yjJM8fnzlqYUjY/0IhpqYC7rpR6y9qsc1NfKhcquL/AfIzjj4wuLz9n19vI5TkFy
 # 8j4mxXqIGVTVAZfRoGN9Nvs40xo3/92uQuxqKYt9q007HL38+azefCipK/YP5CuX
 # Pr7/H8ehbtTKYVTYKvKUfgk=
+=======
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUxMzM3MDlaMD8G
+# CSqGSIb3DQEJBDEyBDDSdXvzBb6IeCqDxIjNedzXHeFxpHkMwp1RmvfGl9BYxIdV
+# JyWd3ZHEybh6HGCE4C8wDQYJKoZIhvcNAQEBBQAEggIABL1UP/ocBNNfbPcbieZe
+# SOcRXBJLZu28GYykGL6jAZ4anKumSAIiKhseLKV1zE6yZG4aNBwHrnnPWY3HqnmN
+# N774qf3rKCmpThslV7H+poTjgz3tvZ4dmFh+gAQaExlU6mMnq/Sff6ZKzbCPb1WA
+# hL1/67nyyBs1N9aIItYYOHrPR4NBuy4p8vX2thqlTNqDDQrBJdZooviueflHCZUs
+# yEe3V7p6SWaiYu4kq2V5y9pGNumNOtkYTCrb6bx4VFh8EATxKQQgHPU78sMsOyUq
+# a9/vY7++3oCc5wLndPnbZdysx1OiR0l1tDANm21KTmSyiKvmh9x1JerKk8GW/LnC
+# e2xkGmxY1e/WjLEb79F9t+msPsgEM0lWcRH3F2jCT2aeN8aennvr35mbJ+Rs2T8l
+# edt1ku4jT536JtDgHe57ru8YQ4dV4+E+WJDK6KGATpZKzrMBFLB0MAgTbEw9nrn+
+# 18r9rkpreNJ/SxStIUasRfloBT80oYzrFQn6PV1/WjqEEsMkdzt743yHL5HnUBWr
+# eGzLV9dQzpcz+E8jQVV6nDJ8UEsYBd0GSzC1AxXANeCLd4elSAzNL1GbR5bOWScM
+# r2qEGwT0grr9Vyit8izTJzkqriKk6YI/GHPh8wWc7AOSNol3+neByF3ZFV7EUBU8
+# f82uPgzJdrLiRskR6WEiSqs=
+>>>>>>> Stashed changes
 # SIG # End signature block
