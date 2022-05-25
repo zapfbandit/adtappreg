@@ -83,6 +83,15 @@ function Create-AppInfoContent {
     $output
 }
 
+
+function ShowIt($txt)
+{
+   Write-Output "**************************************************************************"
+   Write-Output $txt
+   Write-Output "**************************************************************************"
+}
+
+
 function UploadFile($fileName, $azDest)
 {
    ShowIt("Uploading `"$fileName`" to $($connectionConfig.containerName)")
@@ -202,6 +211,7 @@ $templateContents = Get-Content -Path $(Join-Path -Path $rootDir -ChildPath "scr
 $infoContents = Create-AppInfoContent $templateContents $appName $appVersion $simpleAppName $appFile $assignments $installAccount
 $infoContents | Out-File -FilePath $(Join-Path -Path $appDir -ChildPath "info.yml") -Encoding ASCII
 
+ShowIt("Login into `"Build Infrastructure Subscription`"")
 $connected = Login-AzAccount -SubscriptionName "Build Infrastructure Subscription"
    
 if ($connected -eq $null)
