@@ -44,7 +44,12 @@ function Validate-InstallAccount {
         $InstallAccount
     )
     
-    ($InstallAccout -eq 'user') -or ($InstallAccount -eq 'system')
+    if ($InstallAccount -eq $null)
+    {
+        return $false
+    }
+    
+    ($InstallAccount.Trim() -match '^user$') -or ($InstallAccount.Trim() -match '^system$')
 }
 
 function Create-AppInfoContent {
