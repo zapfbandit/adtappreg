@@ -1,208 +1,213 @@
-# This script is super fragile, it will just not work most of the time,
-# it will also make you lose all you're work
+#49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
+#                                                                                #
+#  Classification: ADT-CONFIDENTIAL/ENGINEERING                                  #
+#  File:           Installers/IsoCreator/Common.ps1                              #
+#  Modified:       Wed May 25 15:40:51 AUSEST 2022                               #
+#  Author:         igor.dopita@adt.com.au                                        #
+#                                                                                #
+#  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
+#  This code must not be distributed, used, reproduced or modified for any       #
+#  purpose without the explicit permission of ADT.                               #
+#                                                                                #
+#  Copyright and all Rights Reserved ADT RnD Pty Ltd                             #
+#                                                                                #
+#4f7572732c2062757420776520776f6e74206265206675636b6564206966206974206c65616b730a#
 
-. ./Common.ps1
+$name = "adtappreg"
+$loc  = "australiacentral"
 
-Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "config")
+$storageAccountName = "adtappregacc"
+$storageContainerName = "adtappregcont"
 
-# consts
-$connectionConfig = Get-Config
+$subscriptionName = "ADTTest01"
 
-function Validate-AppName {
-    param (
-        $AppName
-    )
+$rgGroup  = $name + "-rg"
 
-    $AppName -ne $null
-}
+$sid = "S-1-1-0"
 
-function Validate-AppVersion {
-    param (
-        $AppName
-    )
-    
-    $AppName -ne $null
-}
+# Functions
 
-function Validate-AppFile {
-    param (
-        $AppFilePath
-    )
-    
-    # TODO: do basic checks?!?
-    $AppFilePath -ne $null
-}
-
-function Simplify-AppName {
-    param (
-        $AppName
-    )
-    
-    $AppName -replace '[^a-zA-Z0-9]','-'
-}
-
-function Validate-InstallAccount {
-    param (
-        $InstallAccount
-    )
-    
-    if ($InstallAccount -eq $null)
-    {
-        return $false
-    }
-    
-    ($InstallAccount.Trim() -match '^user$') -or ($InstallAccount.Trim() -match '^system$')
-}
-
-function Create-AppInfoContent {
-    param (
-        $TemplateContent,
-        $AppName,
-        $AppVersion,
-        $SimpleAppName,
-        $InstallerPath,
-        $Assignments,
-        $InstallAccount
-    )
-    
-    $output = $TemplateContent
-    
-    $output = $output.replace('${app_name}', $AppName)
-    $output = $output.replace('${description}', $AppName)
-    $output = $output.replace('${app_version}', $AppVersion)
-    $output = $output.replace('${setup_file}', $(Split-Path $InstallerPath -leaf))
-    $output = $output.replace('${remote_files_path}', "$SimpleAppName/$AppVersion/setup_files")
-    $output = $output.replace('${install_type}', "msi:")
-    $output = $output.replace('${install_account}', $InstallAccount)
-    
-    $ass = "    "
-    foreach ($a in $Assignments)
-    {
-        $ass += "`n    - $a"
-    }
-    $output = $output.replace('${assignments}', $ass)
-    
-    $output
-}
-
-$rootDir = Join-Path -Path $PSScriptRoot -ChildPath ".."
-
-pushd $rootDir
-
-& git checkout main
-& git pull
-
-# Get simple app info
-$appName = $null
-while ($(Validate-AppName $appName) -ne $true)
+function ShowIt($txt)
 {
-    $appName = Read-Host "Enter application name"
+   Write-Output "**************************************************************************"
+   Write-Output $txt
+   Write-Output "**************************************************************************"
 }
 
-$appVersion = $null
-while ($(Validate-AppVersion $appVersion) -ne $true)
+
+function UploadFile($filePath, $azDest)
 {
-    $appVersion = Read-Host "Enter application version (default: 1.0.0.0)"
-    
-    if ($appVersion -eq "")
-    {
-        $appVersion = "1.0.0.0"
-    }
+   ShowIt("Uploading `"$filePath`" to $storageAccountName/$storageContainerName/$azDest")
+   
+   echo "$filePath"
+   echo "$fileName"
+   echo "$azDest/$filePath"
+   
+   $storageAccount = Get-AzStorageAccount `
+      -ResourceGroupName $rgGroup `
+      -Name $storageAccountName;
+      
+   if ($storageAccount -eq $null)
+   {
+      Write-Output "Unable to locate Storage Account ($storageAccountName), unable to continue..."
+      exit -1
+   }
+
+   $storageContext = $storageAccount.Context
+      
+   Set-AzStorageBlobContent `
+      -Context $storageContext `
+      -Container $($connectionConfig.containerName) `
+      -File "$filePath" `
+      -Blob "$azDest/$fileName" `
+      -Force;
 }
 
-$appFile = $null
-while ($(Validate-AppFile $appFile) -ne $true)
+
+function GetFile($filePath, $azSrc)
 {
-    $appFile = Read-Host "Enter local path to installer"
+   ShowIt("Download `"$filePath`" from $storageAccountName/$storageContainerName/$azSrc")
+   
+   $fileName = $(Split-Path $appFile -leaf)
+   
+   $storageAccount = Get-AzStorageAccount `
+      -ResourceGroupName $rgGroup `
+      -Name $storageAccountName;
+      
+   if ($storageAccount -eq $null)
+   {
+      Write-Output "Unable to locate Storage Account ($storageAccountName), unable to continue..."
+      exit -1
+   }
+
+   $storageContext = $storageAccount.Context
+   
+   Get-AzStorageBlobContent `
+      -Context $storageContext `
+      -Container $storageContainerName `
+      -Blob $azSrc/$fileName `
+      -Destination "$PSScriptRoot" `
+      -Force;
 }
 
-$assignments = @()
-$ass = ""
-while ($ass -ne $null)
+
+function GetPackages
 {
-    $ass = Read-Host "Enter assignments (One per line - valid values are: TestGroup. Empty value to finish.)"
-    if ($ass -ne "")
-    {
-        $assignments += $ass
-    }
-    else
-    {
-        $ass = $null
-    }
+   # Only try and install packages if we are in admin mode   
+   if (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole( `
+        [Security.Principal.WindowsBuiltInRole] "Administrator") -eq $true)
+   {
+      $nuGetInfo = Get-PackageProvider "NuGet" -ErrorAction SilentlyContinue
+      $nuGetVers = $nuGetInfo.version
+      if ($nuGetVers -lt "2.8.5.201")
+      {
+         ShowIt("Installing NuGet package provider (at least version 2.8.5.201)")
+         Install-PackageProvider -Name "NuGet" -Force
+      }
+
+      $azResInfo = Get-Package "Az.Storage" -ErrorAction SilentlyContinue
+      if ($azResInfo -eq $null)
+      {
+         ShowIt("Installing Az.Storage module")
+         Install-Module -Name "Az.Storage" -Force
+      }
+
+       $azResInfo = Get-Package "Az.Resources" -ErrorAction SilentlyContinue
+      if ($azResInfo -eq $null)
+      {
+         ShowIt("Installing Az.Resources module")
+         Install-Module -Name "Az.Resources" -Force
+      }
+   }
 }
 
-# install account
-$installAccount = 'system'
-# NOTE: installing as user doesn't work at the moment
-#$installAccount = $null
-#while ($(Validate-InstallAccount $installAccount) -ne $true)
-#{
-#    $installAccount = Read-Host "Enter install account (Valid values: user, system)"
-#}
 
-# Make app info
-$simpleAppName = Simplify-AppName $appName
-$appNameVer = "$($simpleAppName)_$appVersion"
-Write-Host "$appName"
-Write-Host "$simpleAppName"
-Write-Host "$appNameVer"
-& git checkout -b $appNameVer
-New-Item -Path $(Join-Path -Path $rootDir -ChildPath "apps") -Name $simpleAppName -ItemType "directory"
-New-Item -Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName) -Name $appVersion -ItemType "directory"
-$appDir = Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion
-$remoteDir = "$simpleAppName/$appVersion/setup_files"
-$templateContents = Get-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\info.template.yml")
-$infoContents = Create-AppInfoContent $templateContents $appName $appVersion $simpleAppName $appFile $assignments $installAccount
-$infoContents | Out-File -FilePath $(Join-Path -Path $appDir -ChildPath "info.yml") -Encoding ASCII
-
-GetPackages
-LoginAsSubscription
-LocateStorage
-
-UploadFile $appFile $remoteDir
-
-# Hack up apply changes script
-$changes = @"
-Import-Module -Name `$(Join-Path -Path `$PSScriptRoot -ChildPath "upload_app")
-
-`$localSetupFiles = `$null
-`$config = "..\apps\$simpleAppName\$appVersion\info.yml"
-
-Add-Application `$localSetupFiles `$config
-"@
-Set-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\apply_change.ps1") -Value $changes -Encoding ASCII
-
-# Commit and create pull request?!?
-Write-Host
-Write-Host "Creating pull request..." -ForegroundColor Yellow
-& git add $rootDir
-& git commit -m "Adding $simpleAppName"
-& git push --set-upstream origin $appNameVer
-$ghExe = Join-Path -Path $PSScriptRoot -ChildPath "gh.exe"
-& $ghExe auth status
-if ($LastExitCode -ne 0)
+function _LoginWithFlag($useManagedId)
 {
-    Write-Host
-    Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
-    & $ghExe auth login
+   $connected = $null
+   
+   if ($useManagedId -eq $true)
+   {
+      ShowIt("Connecting to Azure using the managed identity")
+      $connected = Login-AzAccount -identity
+   }
+   else
+   {
+      ShowIt("Connecting to Azure using subscription `"$subscriptionName`"")
+      $connected = Login-AzAccount -SubscriptionName "$subscriptionName"
+   }
+   
+   if ($connected -eq $null)
+   {
+      Write-Output "Unable to continue"
+      pause
+      exit -1
+   }
 }
-& $ghExe pr create --title $simpleAppName --body "Please respond" --head $appNameVer
 
-# Done/cleanup
-& git checkout main
-& git branch -D $appNameVer
-$folderToRemove = $(Join-Path -Path "$rootDir\apps" -CHildPath $simpleAppName)
-if (Test-Path -Path $folderToRemove)
+
+function LoginAsManagedId
 {
-    Remove-Item -Path $folderToRemove -Recurse
+   _LoginWithFlag($true)
 }
 
-popd
+
+function LoginAsSubscription
+{
+   _LoginWithFlag($false)
+}
+
+
+function LocateStorage
+{
+   ShowIt("Locating the reource group ($rgGroup)")
+   $resourceGroup = Get-AzResourceGroup `
+      -Name $rgGroup;
+      
+   if ($resourceGroup -eq $null)
+   {
+      ShowIt("Creating the Resource group ($rgGroup) since it was not found.")
+      $storageAccount = New-AzResourceGroup `
+         -Name $rgGroup `
+         -location $loc;
+   }
+   
+   ShowIt("Locating the Storage Account ($storageAccountName)")
+   $storageAccount = Get-AzStorageAccount `
+      -ResourceGroupName $rgGroup `
+      -Name $storageAccountName;
+      
+   if ($storageAccount -eq $null)
+   {
+      ShowIt("Creating the Storage Account ($storageAccountName) since it was not found.")
+      $storageAccount = New-AzStorageAccount `
+         -ResourceGroupName $rgGroup `
+         -Name $storageAccountName `
+         -SkuName "Standard_GRS"`
+         -location $loc;
+   }
+
+   $context = $storageAccount.Context
+
+   ShowIt("Locating the Storage Container ($storageContainerName)")
+   $storageContainer = Get-AzStorageContainer `
+      -Name $storageContainerName `
+      -Context $context;
+      
+   if ($storageContainer -eq $null)
+   {
+      ShowIt("Creating the Storage Container ($storageContainerName) since it was not found.")
+      $storageContainer = New-AzStorageContainer `
+         -Name $storageContainerName `
+         -Context $context;
+   }
+}
+
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDHTY3zfzE4azyu
-# n/cRK27meSKc4+yAI5vVUoDz13+KOKCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDj+PjL73ryrHej
+# QaGVFA2r9jEcwL2FD/4qbDubReaMS6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -345,29 +350,29 @@ popd
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCA1RKntsPSNXxZHMd7GIrv7eWkv+6IVaMRYH6O4BEqM2TAN
-# BgkqhkiG9w0BAQEFAASCAQBTmUKvj+ViX6EKltaHt/zlXDnVCcLIHexuNE0hTP9p
-# zebWI/VsozDEOuGvkdsJpHe+CuibcxfshUNGEFIgXV8oSqLQjP/umWo463uEuYpf
-# vTUjwhkwfNPkSI0/USAoxjbdNZTTPTQEa3VDvDHz/8C8/GStQPHdIToh9x1WF3oZ
-# gCjTGHGL9t3NE4pNtw3q3NjPXCn3cdjBu6JnBN7aeSAzfhm420D/Rr74XE3U3Z5c
-# 7JlkfiStIAxTZ59THVnaqADFJhyNYyEPuwocj41dpFKlZlkSdXMuGiyNuL4/x4bd
-# Zlx7ZqZ7Nurkp8DplDQjG1qkNLCWRGrbfD6bLdw0ykS9oYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCD8RgnnS5Dp5QaZgWKpPCNFsjtf2ahMHS31jlPV0XnMSjAN
+# BgkqhkiG9w0BAQEFAASCAQBM9au/yFNtr8lfQ0sUovq2a1MAr2HVTz/JzTyS7McA
+# JMhBgnluLxmlDjTFqWBDA9Rh1VgvzsK/LvSjGAPncaVRnu1A/uD4A3FBjbM0vn6c
+# 0HxGqVOWppPXuZSyU1iHwxBBIullsK+5zzOZBI64shT8jLLagnep1pBFJ6540JCl
+# nV00YWgHD0mTrZiTq1D+gFcwif5jnww/1rEin+PBI+gGYn1mWdX9zPwE4TLaCPvj
+# EDDwXfWV+jA/gy7cVc/Hp1KMmyuWo/b50RVntAySy3DKxUawC3nQTGVYV5EoNmlX
+# nOF/jecKe+2fJByuI+MWNLRJe5etJ/qMkQXkxrw+YjRloYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUwNzI1MjBaMD8G
-# CSqGSIb3DQEJBDEyBDARDd+m8jBr7umG7IOWXg1LjR/6xKxk3W/8Bgk37MMEgHhl
-# qGcON7v5R97u4YmwOTIwDQYJKoZIhvcNAQEBBQAEggIAR4/DOC36q9EukRIWy22g
-# h2zEtwwzl7aH+hWKG079EI4HpDJsOWk2s2TR6Mr4vj8ZIOmKJ7WpdQuWxvJtoumG
-# ioJRCKEnNOxwjjbmv2Cd+dMr0cx7X+O0VwfU+Ve8/r+bWvcSQr8AXg9q9CoZe3VL
-# /YoYRq1PHWDnyEWLBhC4KgQC2oJXR4WCjzuIo/uSK3nz19oRd4X1fNfsKxSBsgji
-# xdMBcEqK+1kgbLMFFGupH3FW5M4nRKyE1WGkVVcaoVG+F2pIlddGzt7lKGeDzcKS
-# N9jsc7LTdy0nbWH8DkLs94HAYWAGgxnZb0foLvmt5aTNItbB3VYX/ZpSbTW3Hs1c
-# 3lpJBABPOf5Y7e+DYal7+RkMOuBNlCKZRp99nlpIdstMhEifzvJ4m267jiJLsR2I
-# TdIM+qo+FQM0FwnBwttn4ayX6lDbIAh8JJ29ZLAjBrEB2irNiYJyzYV3/81yM9f1
-# GpG4mSasw/cLIW/2RTY+c6Iq7G/pKYbq5how8As7YkPYqVh5MBf13SErngiQBNjl
-# Ka19i4h2AscX/qL6crJmjN3TCjQUiTMhGGEHXDxsItY2vrSsr0oL6N1gVq/2kNl4
-# jZPnIlwIVqoWgoztGMLcxRw/gNBQLnbXagPA/JtKocv8kMnxmaCyueiy7Eg3hDXY
-# 0xhFgHmBXgjhOU7yxF5/Uy4=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUxMjExMjZaMD8G
+# CSqGSIb3DQEJBDEyBDCN9wX64rCS8+nrirP3zrihWXnKZztzKIJKKRz9sIfGH8ze
+# aKTOh4zHANAGr5A3DtQwDQYJKoZIhvcNAQEBBQAEggIAHoQXFJodVNeW3hHmbVii
+# JuBjn5SEtJ2wgmFysrDrLnBgh/a7017ehgEujdgILuGJ1402OeB2/Z5v5WbY7PYM
+# +WEjY+6UOdU9coQZN7T7cCy44M0vRGGGZTkaXeJY8/BtFuEdfVUjW0QyprMfguLf
+# bsekHtQTonONexvp0Z3CqnjuQB0xxBNUk45OVDpto+nnbojF3BMMq7ZgHzisV7QK
+# IYj5O00alK1fLkUySuhInrGD72JPAKVwDGfx01qw27jMLeaR4i2T8DDKMTeO1x9Z
+# 2MeNaBgb2hKW8goApGT7DYdJeH2usm7vUQwfLtK+CtNozl29nRJYgHgdcUCwCIxj
+# u2dm5oVAAljK/i1QXCizFMyPXYKZxLFGphx0o55OnT6m2H0v3UE/O4AgfZY3BAla
+# Ux+CG3KrOtfr/QxNHJjnbu5INXnI6YVgiF+2sFQM2Po5DvI5aJq31FlBKz2hDiRr
+# 6BuN9TrOYE3mAXr5LKCl+GkRx/DMfpqXw/PvEE8RU7xlvlqQzvC4vyK7l4BF9axZ
+# Jk6Os8TdITOnnXSDdFGroQ9h1PZnpxEyevFZlkxQavRKT8hkTcsW//AsguOJ2Ct+
+# Mxu3D6gTb3NtN2qnjVzL3MTvZCrJH+XukYVF/NWhHGstvrHfZ4xUD+qvwiBygPHk
+# PzzncYBFAfTwMy5t4yBDL+M=
 # SIG # End signature block
