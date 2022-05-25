@@ -130,11 +130,13 @@ while ($ass -ne $null)
 }
 
 # install account
-$installAccount = $null
-while ($(Validate-InstallAccount $installAccount) -ne $true)
-{
-    $installAccount = Read-Host "Enter install account (Valid values: user, system)"
-}
+$installAccount = 'system'
+# NOTE: installing as user doesn't work at the moment
+#$installAccount = $null
+#while ($(Validate-InstallAccount $installAccount) -ne $true)
+#{
+#    $installAccount = Read-Host "Enter install account (Valid values: user, system)"
+#}
 
 # Make app info
 $simpleAppName = Simplify-AppName $appName
