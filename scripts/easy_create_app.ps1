@@ -39,6 +39,14 @@ function Simplify-AppName {
     $AppName -replace '[^a-zA-Z0-9]','-'
 }
 
+function Validate-InstallAccount {
+    param (
+        $InstallAccount
+    )
+    
+    ($InstallAccout -eq 'user') -or ($InstallAccount -eq 'system')
+}
+
 function Create-AppInfoContent {
     param (
         $TemplateContent,
@@ -46,7 +54,8 @@ function Create-AppInfoContent {
         $AppVersion,
         $SimpleAppName,
         $InstallerPath,
-        $Assignments
+        $Assignments,
+        $InstallAccount
     )
     
     $output = $TemplateContent
@@ -57,6 +66,7 @@ function Create-AppInfoContent {
     $output = $output.replace('${setup_file}', $(Split-Path $InstallerPath -leaf))
     $output = $output.replace('${remote_files_path}', "$SimpleAppName/$AppVersion/setup_files")
     $output = $output.replace('${install_type}', "msi:")
+    $output = $output.replace('${install_account}', $InstallAccount)
     
     $ass = "    "
     foreach ($a in $Assignments)
@@ -114,6 +124,13 @@ while ($ass -ne $null)
     }
 }
 
+# install account
+$installAccount = $null
+while ($(Validate-InstallAccount $installAccount) -ne $true)
+{
+    $installAccount = Read-Host "Enter install account (Valid values: user, system)"
+}
+
 # Make app info
 $simpleAppName = Simplify-AppName $appName
 $appNameVer = "$($simpleAppName)_$appVersion"
@@ -126,7 +143,7 @@ New-Item -Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName) -Nam
 $appDir = Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion
 $remoteDir = "$simpleAppName/$appVersion/setup_files"
 $templateContents = Get-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\info.template.yml")
-$infoContents = Create-AppInfoContent $templateContents $appName $appVersion $simpleAppName $appFile $assignments
+$infoContents = Create-AppInfoContent $templateContents $appName $appVersion $simpleAppName $appFile $assignments $installAccount
 $infoContents | Out-File -FilePath $(Join-Path -Path $appDir -ChildPath "info.yml") -Encoding ASCII
 
 # Upload installer
@@ -172,6 +189,10 @@ if ($LastExitCode -ne 0)
 # Done/cleanup
 & git checkout main
 & git branch -D $appNameVer
-Remove-Item -Path $(Join-Path -Path "$rootDir\apps" -CHildPath $simpleAppName) -Recurse
+$folderToRemove = $(Join-Path -Path "$rootDir\apps" -CHildPath $simpleAppName)
+if (Test-Path -Path $folderToRemove)
+{
+    Remove-Item -Path $folderToRemove -Recurse
+}
 
 popd

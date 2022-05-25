@@ -17,7 +17,7 @@ installInfo:
   remoteFilesPaths: 
     - ${remote_files_path}
     #- ${app_name_no_spaces}/${app_version}/setup_files
-  runAsAccount: system # valid values: system, user
+  runAsAccount: ${install_account} # valid values: system, user
   
   # Choose one of the below, and delete the others
   ${install_type}
