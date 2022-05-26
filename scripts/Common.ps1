@@ -59,7 +59,7 @@ function UploadFile($filePath, $azDest)
       
    Set-AzStorageBlobContent `
       -Context $storageContext `
-      -Container $($connectionConfig.containerName) `
+      -Container $storageContainerName `
       -File "$filePath" `
       -Blob "$azDest/$fileName" `
       -Force;
