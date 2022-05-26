@@ -118,6 +118,7 @@ $appNameVer = "$($simpleAppName)_$appVersion"
 $appDir = Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion
 $remoteDir = "$simpleAppName/$appVersion/setup_files"
 
+& git remote prune origin
 $branchList = & git branch -r
 $branchFound = ($branchList -match $appNameVer)
 
@@ -183,6 +184,22 @@ LocateStorage
 
 UploadFile "$appDir/applocker.xml" $remoteDir
 
+# Commit and create pull request?!?
+Write-Host
+Write-Host "Creating pull request..." -ForegroundColor Yellow
+& git add $rootDir
+& git commit -m "Adding $simpleAppName $appVersion applocker policy"
+& git push --set-upstream origin $appNameVer
+$ghExe = Join-Path -Path $PSScriptRoot -ChildPath "gh.exe"
+& $ghExe auth status
+if ($LastExitCode -ne 0)
+{
+    Write-Host
+    Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
+    & $ghExe auth login
+}
+& $ghExe pr create --title $simpleAppName --body "Approve $simpleAppName $appVersion applocker policy" --head $appNameVer
+
 # Done/cleanup
 & git checkout main
 & git branch -D $appNameVer
@@ -197,8 +214,8 @@ popd
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBv58Vn6j6Pk8Ss
-# 8WJcaPxCzjh17HQx3aeDMMBHlG3t8KCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDWRYnR66xu7Edv
+# coccDSUQmW1F4hOUnAFYE+KVzJeG06CCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -341,29 +358,29 @@ popd
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCCX/tdf/UFtfb+HvG60ZhKoXCUF1IEUi031Bw3f7t+bUDAN
-# BgkqhkiG9w0BAQEFAASCAQAcYpyIOLReJ3IeZABN0qHx4HqUxUhPyfh/KGhE0MDN
-# eCQCdFqEvs/hdQeb6BPjWk9mN0UePiYPVk3tmUpVnYlQzkUJMfpN1a6W2gy2zA0E
-# aDpc/u71octiKnvF91x5Y6bWI0Eq6M5Sz2C3B7BSC/X/wusJZWH1acfTVrIWucWU
-# iICpzJLDJ2V7UROzFgfiEwhzOlLTkjx7Ezwku/TzejrGejKoV6vdral/vdlvT2GK
-# 7CgHYc5XdhNSMs/4OZx01F//YOSqHWH9tx2s3PI/xC4QWeiJO0gM3uHEr837Ro8b
-# hD8HHvy0kNW4//FNWDtZs2sy7a3xQ/6Qy+hxv6qA+uQYoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCAP7ojlWln/6mFAj+J82vKFRi+Jsxwd+s9p34oUa1sJFDAN
+# BgkqhkiG9w0BAQEFAASCAQByJ1NaC6G3h4/SS/kK+u/PLbuY3axETY821TB2xJmO
+# 3CFuTqFjjilqGIn4fRHYHJznn/W0ia1FWHv/3mb5mXk5yKQQVI1x6zICiiNobCc0
+# qNb7ootwCK8LNB2Wyu9M4bpvzmp2SGpncYQhzHnRklGYdGcrvdJErkBWg1Z2TSuS
+# bT6ka3u7rB21XAxV8I300HbGTKsCmiENIAijvC257P2KOtJL+i6hErgDa/KNvsFM
+# e0gYAanaNNPpeeCtr36ZUiaVD/Sq69UoVLdoKxjUsQRZKmYlRVIJ+1nxmtU67n2D
+# GXysyfU2QlhV3MqmwqkrAup0C3r8964PQimE/UG4pztnoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwNTQ3MjBaMD8G
-# CSqGSIb3DQEJBDEyBDAmZB5JcbX8jR4BxkW6pm9Xq3dLgVEdui0U+5HfEwnlT8sM
-# Z2Az0CPKyed/ISNNiiQwDQYJKoZIhvcNAQEBBQAEggIAW3vO/klSCsvKXKSwJt7S
-# tq5hQiJiR8lNMwmUm/w5tWdtyLIRWdhQ8zipC00KCkNQVmDgQoSZCqwaOUsP9gtY
-# GKD4HAMejmNiK8GYBxIzshB1K0Zln5qD+Rb0kf66xYrl4qSblQFIDoH9qia+KNBX
-# L1C/1rVvPXXU6UdOEDjoLUh9ZV0NyTbNNny6iVAhB5NaJVbcDUlXMhbDeKqseLCh
-# 6K3dXRH90GukCdj4AJeoW3ZOnW6gMHuaEMWjBqwHOHtttQwyJVjjfjJVfWVAgiYK
-# kGIkw0VTE75GhwqE97TpGj1RBG1Zjf6wYVYmUAF7GCbIo9KZv5RjBQ4JOhnAxm1g
-# Vx7yn6Ce4TlZZZ7EFAbhSe0tL26mAyAGzLX4cSbmf2k7SnFg0pLocpbMQEW6ZxWH
-# ANrYBodqq85iq4iWc/aM8v3uPtM6O6cgjQlNOfK1S+Ok1iTxAhw63YlG35DB8T5c
-# lZIiDA8sGRc3unN3W2ewCcPmZ7XfosmBWmzUVTlWDiz6/H9Qy224jJuyJk58d0nE
-# +/X8P5jJCRgohIwgy3xQxK9uPJh2zvvmRGQHO3VIn5MZu8Nnjo5zmIimVGg3MZ/X
-# 6QhtATAryLgNgxNhdXowRUSXBF1Kl3jb+b2UtsCDzsqK2oIW9nvowdlwLzZaDzHH
-# lq/IQKr88hmYT/1Z7nqLrr4=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwNjAzMzRaMD8G
+# CSqGSIb3DQEJBDEyBDAm63kndzwej1gvxt0C9MOjUABInNdZakd11Jdwn8AqTQFG
+# WetUBLOXPL76EW72tTgwDQYJKoZIhvcNAQEBBQAEggIAJk19Y6/gg1AYyz7PyIfM
+# SVs6d1OJZtldm1E3Hk0hewKsWshkkWXuJvMR1gN3/+T5xQkrfJ31dQr+dPMtFJG+
+# dmPjzq28NZIMGSKK3Puw3+WF1tjBrTMP0e1OPU5TXn87Ti88i7OA0cwck+yCYV3/
+# LpNxONpnF/jMF1H+3DCRrXouhkVCoLMFuT31BzYp9/0WjBdjGEi4UPmyaxsmIgmm
+# ViCRV2g31hEgPVMzVe+KEcuPm7EYX+47oL5ynZbtVNKMzeri6qvV8blvCXF6p9cD
+# xXTV3e1BOZna/62ja/ivVQKOQPdNUbEsIZTlGEkRLBy2QXIoTE91JOBRgh+3BPTb
+# FwV1xblA2WnjFyEkKNQOeZufHy+wr/VgWJbsU1x/iNzoS716IN4rGvvHgf7gGd/V
+# uRzelTba/WJLlU2wZ/GgxDSaTEkPat9tx+/04O+kDtZUU4o2YwyCjyfm4xAxvsQO
+# Mmkit9xyMIezLdZMNSGVutGMAxuALqrYRhNQYmNIjrHaIo2SwVy06QbQ8IOYwOhj
+# fIyDNSVecClEysX76MnKaDRBd89jC1iMUgJOuviWsB189dtuk/Df+kYWxsE9goX1
+# pN2YPSe7O3nAKOilwYLxDXiBMtbeF0v81hgy6CR3KoofnGgOBaH18/jHNw2dqmyv
+# z7gbvX28RZwkybgbFFcKmzE=
 # SIG # End signature block

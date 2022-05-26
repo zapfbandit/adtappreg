@@ -173,8 +173,9 @@ Set-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\apply_change.ps
 # Commit and create pull request?!?
 Write-Host
 Write-Host "Creating pull request..." -ForegroundColor Yellow
+& git remote prune origin
 & git add $rootDir
-& git commit -m "Adding $simpleAppName"
+& git commit -m "Adding $simpleAppName $appVersion"
 & git push --set-upstream origin $appNameVer
 $ghExe = Join-Path -Path $PSScriptRoot -ChildPath "gh.exe"
 & $ghExe auth status
@@ -184,7 +185,7 @@ if ($LastExitCode -ne 0)
     Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
     & $ghExe auth login
 }
-& $ghExe pr create --title $simpleAppName --body "Please respond" --head $appNameVer
+& $ghExe pr create --title $simpleAppName --body "Adding $simpleAppName $appVersion" --head $appNameVer
 
 # Done/cleanup
 & git checkout main
@@ -200,8 +201,8 @@ popd
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDs7owPC4CCysfK
-# Sewp2nW9HqSyImycMREU5yKof1ZAk6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBOQKZT59eTvl3v
+# 7vu1K6p1teP0oMQTqh5XuhPR3hTi0qCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -344,29 +345,29 @@ popd
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCDdPGalircNORFY8jcTf/KPRhtNnWuH5RIyK+5MaxcM9TAN
-# BgkqhkiG9w0BAQEFAASCAQBAqlzNapvBlXH/rvWmu/4sUkQBDYVTlLxcfv1W6b4D
-# Y3cgGG5EEZ9Xcp5AkG9kgR8zLDPuQzAOu1WsIXYXvRRJExlUAErnNpXoNy71Akhr
-# 3Sm6gmOKoBgC93+6OS2LBGT9yOxq8yNYrDOyazlMR3TdW9bBgQPCVG4MyUGSPKAl
-# CAgotN43/UE5DI4k80fEcANgcHrNM76epgtCAq73qXCCMmqKQMS/T3syxehkv7rh
-# VO4YjARmymhXKdsdez3pqdafpxC2x//fdpnv/8+rP7Vms3DDkZ/LUI8AP3894gxO
-# 5tCMZ/Uf4PFltvLbpdsigjQxcp8rppXTSpcKKpBLOQbZoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCCuMieroFSNUmp5DYtRHzfjz55g7lQ8IpTYxBEqbrcJuzAN
+# BgkqhkiG9w0BAQEFAASCAQAO21okxktteX6UHXxYbwZ6ZmNHT0SdjU+0MIINFTP0
+# h6zc6WWWYNJ1FCpaoyImTODpzsMfo4EfJ3S0BMaS5d8+UX0SVAH0CgUZbMB02r7J
+# mHB/pCov0hlxLWxWiyGhH95xD60f2wnxDfKeQpDqyMULZvOrnLxjVFnySRd3a8uz
+# somx/qVOGKIcY+Apc839n19FIoSu2izVFLSS2Cre3V8ZCE+xM/YR7RLUv2cADtx3
+# thqiwVZkmKn8aU2AcEsQ1g75BzBZ4OsgbBZITR9ho5NVQ6akaDgiWujGmcSoZRwm
+# 7PkHtggoeAZUY/5y2UNFuJE11Cr65PtQhiuGb/5ULzgsoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwNTM3NDdaMD8G
-# CSqGSIb3DQEJBDEyBDAxIiUQTvzGBEJYMzEKlmjCeRZmsE9uFeVm9ZIKsluH81pn
-# o0FPNP72PgPGP3zrf3IwDQYJKoZIhvcNAQEBBQAEggIATFAxVwaOiXh0P4FoESHN
-# hCdd0nA06IUeyl0V7Hw1MbS5+FgRDFtWWxw/W+FIszfSo5bA3rme5JLzIvUp3OK4
-# c4edsZ1aEjZTVhlEo/OMQ1mJW7V7lp90zq0I+O5qaCSQKUMsg7FRge5FIqFpl3iX
-# 4V7k1rhAzaVMcgx2IDT0eOHLTkpw5lYA8gnR+J+Xnbm5phChX6erDRIJrh1mWg/Y
-# RAQ5hyLk+rx+OZMu9B135Hdv631C6TFk/XnW1+LJkrrhkI+JZosDY5w5feWdacFj
-# 6LXakaE5NWYerAvOmBgRoH1/v3F5Af5KAL5sxjrL4zBArfDsr1L9W/tB1C5UTHxd
-# 12gLn986tZ2u+T9r2/z9AQe03tvZxK0khwa6CW27zAc8MCIv4BliyjkmZSAL9o1c
-# umKo6Sa6fqJdUmsMG6V/fhAUp0aHXuP48TYJDb+4MG6rnpzHNtGEnAYk9aefOvbF
-# P2rcOm3Cco5aKrZsThyugLT9MmSQUfNT+1ikKTSI4wIgCMCD7St4d9nSXoF5rVWz
-# GJjgj0eabHkQQEBZ2NcdRLFl//lKGYLsclHHOfhNhSzLpBcbyefUN8hISzZxNU/r
-# Y3LCGtXFW+FRk5JmalmoKFvRgXtGpTOK28BudoQQZcMdF49r0eotAyYMl2+mQ1oX
-# k7b/0SNzCsbnEt3DPq7D6ow=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwNjAzMzFaMD8G
+# CSqGSIb3DQEJBDEyBDB3jTaoSaTVxMHLXxLOimVNJvQLLv+/5QVeUUiK2x9CsPzY
+# hO+8GSDDl6VKHYbcl8EwDQYJKoZIhvcNAQEBBQAEggIACC0PMif3PGYS44LdYxrG
+# asGAySnCjtK9BNc2m4SmbaQHCbAW8cZY/TvjPG+InS2hwDQW5BXwNs5B0AgRrGU+
+# lCHBrNHvbilry2aUc6R/kqZP0XAwb+SFQJNxN748pSr2BCtqV3891eJobm1h0y8Z
+# jMebn9pT76L8bpijfu4zOkjQqRLTdPa4ToqalNho2brQJyhXSuP8hZezOLJktk5K
+# nIAEtNbJQNWs6h64Lrt4PFeqKAlms3M8UGW1ITCEHZj/DTI0W/WSAJaXGqCPHKyt
+# 5/CvLw1r/b7+aNVHJ3zNEgJql1FuEXfLDT7Ocgg5KdPELGwTNlq/FoNEjYy8mq+g
+# Zt9hsrInn8FWUGXRwK2L416rc1u6tuM1gi06CqcZpV60ybKtCEEfDZrgxRB8Wv+u
+# sJdV/rnYlKC5NgWblM+nR0iERzV9K11hDB+ByQ1U99PCFJLUOG/uNyWONJmYpJDL
+# BtoR58nAAMIMkybNi+m6YgTiSOXSWl+S9XdlqPzafm+9x3gf8IEYJrzpbKsFGAr3
+# +VpytwD7oJNf2bmWzf58hn8PJ7u3k263V95tX+wLrr0YH+hMFRbEvnFX1XOSXrPy
+# 6XXPJprHWtWfhGluQW5sAWROJM7tqYhfb+40pw0CGhJFxMlhqfc7zC/05vH0E/xm
+# FS1Y5VjRZ6mtSvo8RLFLyqY=
 # SIG # End signature block
