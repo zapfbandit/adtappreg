@@ -1,76 +1,177 @@
-#49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
-#                                                                                #
-#  Classification: ADT-PROTECTED/ENGINEERING                                     #
-#  File:           Utilities/ScriptSigning/GetCertificate.ps1                    #
-#  Modified:       Tue Mar 29 12:35:45 AUSEDT 2022                               #
-#  Author:         igor.dopita@adt.com.au                                        #
-#                                                                                #
-#  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
-#  This code must not be distributed, used, reproduced or modified for any       #
-#  purpose without the explicit permission of ADT.                               #
-#                                                                                #
-#  Copyright and all Rights Reserved ADT RnD Pty Ltd                             #
-#                                                                                #
-#54686973207265616c6c79206675636b696e67206d6174746572732e2e2e2074616b652063617265#
+# This script is super fragile, it will just not work most of the time,
+# it will also make you lose all you're work
 
-$cert = $null
+. ./Common.ps1
+. ./Applocker.ps1
 
-Get-Variable true | Out-Default; Clear-Host;
+Import-Module -Name $(Join-Path -Path $PSScriptRoot -ChildPath "config")
 
-$certs = Get-ChildItem -Path 'Cert:\CurrentUser\My' -CodeSigningCert
+# consts
+$connectionConfig = Get-Config
 
-if ($certs.Count -gt 0)
-{
-   $certNum = 0
-   
-   if ($certs.Count -gt 1)
-   {
-      do
-      {
-         Write-Host "Please select the certificate to use:`n"
-         
-         $id = 1
-         foreach ($cert in $certs)
-         {
-            Write-Host "$id`:"
-            $desc =  $cert | Format-list -Property Subject | Out-String
-            Write-Host $desc
-            $id++
-         }
-         
-         $certNum = Read-Host -Prompt "`nPlease enter the certificate number to use"
-         $certNum = [int]$certNum - 1
-         
-         Get-Variable true | Out-Default; Clear-Host;
-         
-         if (($certNum -lt 0) -or ($certNum -ge $certs.Count))
-         {
-            Write-Host "Invalid selection, please try again...`n"
-         }
-      }
-      until (($certNum -ge 0) -and ($certNum -lt $certs.Count))
-   }
-   
-   $cert = $certs[$certNum]
-   
-   Get-Variable true | Out-Default; Clear-Host;
-   
-   Write-Host "Using the following certificate:`n"
-   
-   Write-Host $cert
-}
-else
-{
-   Write-Host "No Code Signing Certificate was found."
+function Validate-AppName {
+    param (
+        $AppName
+    )
+
+    $AppName -ne $null
 }
 
-return $cert
+function Validate-AppVersion {
+    param (
+        $AppName
+    )
+    
+    $AppName -ne $null
+}
+
+function Validate-AppFile {
+    param (
+        $AppFilePath
+    )
+    
+    # TODO: do basic checks?!?
+    $AppFilePath -ne $null
+}
+
+function Simplify-AppName {
+    param (
+        $AppName
+    )
+    
+    $AppName -replace '[^a-zA-Z0-9]','-'
+}
+
+function Validate-InstallAccount {
+    param (
+        $InstallAccount
+    )
+    
+    if ($InstallAccount -eq $null)
+    {
+        return $false
+    }
+    
+    ($InstallAccount.Trim() -match '^user$') -or ($InstallAccount.Trim() -match '^system$')
+}
+
+function Create-AppInfoContent {
+    param (
+        $TemplateContent,
+        $AppName,
+        $AppVersion,
+        $SimpleAppName,
+        $InstallerPath,
+        $Assignments,
+        $InstallAccount
+    )
+    
+    $output = $TemplateContent
+    
+    $output = $output.replace('${app_name}', $AppName)
+    $output = $output.replace('${description}', $AppName)
+    $output = $output.replace('${app_version}', $AppVersion)
+    $output = $output.replace('${setup_file}', $(Split-Path $InstallerPath -leaf))
+    $output = $output.replace('${remote_files_path}', "$SimpleAppName/$AppVersion/setup_files")
+    $output = $output.replace('${install_type}', "msi:")
+    $output = $output.replace('${install_account}', $InstallAccount)
+    
+    $ass = "    "
+    foreach ($a in $Assignments)
+    {
+        $ass += "`n    - $a"
+    }
+    $output = $output.replace('${assignments}', $ass)
+    
+    $output
+}
+
+$rootDir = Join-Path -Path $PSScriptRoot -ChildPath ".."
+
+pushd $rootDir
+
+& git checkout main
+& git pull
+
+# Get simple app info
+$appName = $null
+while ($(Validate-AppName $appName) -ne $true)
+{
+    $appName = Read-Host "Enter application name"
+}
+
+$appVersion = $null
+while ($(Validate-AppVersion $appVersion) -ne $true)
+{
+    $appVersion = Read-Host "Enter application version (default: 1.0.0.0)"
+    
+    if ($appVersion -eq "")
+    {
+        $appVersion = "1.0.0.0"
+    }
+}
+
+$installedDir = $null
+while ($(Validate-AppFile $installedDir) -ne $true)
+{
+    $installedDir = Read-Host "Enter local path to the installed directory"
+}
+
+$assignments = @()
+$ass = ""
+while ($ass -ne $null)
+{
+    $ass = Read-Host "Enter assignments (One per line - valid values are: TestGroup. Empty value to finish.)"
+    if ($ass -ne "")
+    {
+        $assignments += $ass
+    }
+    else
+    {
+        $ass = $null
+    }
+}
+
+# install account
+$installAccount = 'system'
+# NOTE: installing as user doesn't work at the moment
+#$installAccount = $null
+#while ($(Validate-InstallAccount $installAccount) -ne $true)
+#{
+#    $installAccount = Read-Host "Enter install account (Valid values: user, system)"
+#}
+
+# Make app info
+$simpleAppName = Simplify-AppName $appName
+$appNameVer = "$($simpleAppName)_$appVersion"
+Write-Host "$appName"
+Write-Host "$simpleAppName"
+Write-Host "$appNameVer"
+& git checkout -b $appNameVer
+New-Item -Path $(Join-Path -Path $rootDir -ChildPath "apps") -Name $simpleAppName -ItemType "directory"
+New-Item -Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName) -Name $appVersion -ItemType "directory"
+$appDir = Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion
+$remoteDir = "$simpleAppName/$appVersion/setup_files"
+$templateContents = Get-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\info.template.yml")
+$infoContents = Create-AppInfoContent $templateContents $appName $appVersion $simpleAppName $appFile $assignments $installAccount
+$infoContents | Out-File -FilePath $(Join-Path -Path $appDir -ChildPath "info.yml") -Encoding ASCII
+
+CreateAppLockerPolicy $sid "$appDir/Applocker.xml" $installedDir
+
+GetPackages
+LoginAsSubscription
+LocateStorage
+
+UploadFile $"$appDir/Applocker.xml" $remoteDir
+
+popd
+
 
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBRtG5BLaEtUvuh
-# EOzjvRyLUkKlfXD4hTdyvmG/3r3bTqCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBsoFjGx9+w2aPK
+# 6CZg1fl90ZThukvTjdItSPhkX8eijqCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -213,29 +314,29 @@ return $cert
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCBuUs2cepZqYDlCCzzhkKCwQU8FebDA0qc/SyAK+Stk5DAN
-# BgkqhkiG9w0BAQEFAASCAQBbAw5CObp5SAD/E5geUPhFLO9635MNQd4CUZBjodMD
-# 6uCWMe6eutDsn2ErJKsc0lEIPfn26IcpqCZ2NZIUDKG/+P1ssVC1peYaCnVaMYe+
-# xzZgzHGB26Rd9Xikd/SbNx0V4nhqi/MGt7G3A8NFr0SwRxWVm8+92qY0QmcztONz
-# KMBEpKVvUKYinxI/AjANpMpTzz7wzcNTAMQ44TcoJb2j1Zhx4At9xs8wtZH/nx+K
-# M1pgbjUqE0b8AG3tGWmTtsyLNUo3HV1Lq6s4u87qLxGPxPOf6Qkr0lgME9haABWO
-# 4cBQiFJ+ioPlh/cjX/IopF/AztmWg81niYDX+ZbRlwwgoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCDUCncLUWqvRXpsK2ZAY/g58Cz9fDb5DH6JLOa2LCSgUDAN
+# BgkqhkiG9w0BAQEFAASCAQBWYHvCZYc5IawEnuUyud+vZGvKyOjuvou09P2FZYfY
+# cCA8oufwScgEW4O/TJXiw87UHJwqzLMJHVslRRhUR4hhxdO2OK1S/+gJ++IHLlv8
+# hL0DLuC73btPMgSh/z7Z+tvddPz5tmUvDntZctDa7iGtntXqnerWenHnfgwMBoWi
+# gBY/EFA+8nBXWqiKexYvbTKmoXE9M1/ZdpVhrLqLIW2y02l6O4UEHWmX31Rj+soE
+# PiqjOtMVgDqqBcRVaxYjLgtwAG45CSrdDJL7hwGpwcWbWkU3qu+3Pzj3dSa3VbMP
+# 7xXb3ofc8d3pG8Nuwbph0/vSjOQhP/4DHYbSVteOLxfyoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTU1MTBaMD8G
-# CSqGSIb3DQEJBDEyBDAk/nn3WPYo3NmzKXNbd74lvBvtCdbcrEKMz3exbBQ5QVZx
-# bdQDJB9f1CjJsih5d4EwDQYJKoZIhvcNAQEBBQAEggIAIj1leezj4kQbfg8wVZwm
-# 5ncgii2zaLgyJuVMKDkoFp5vGZmFpincu67MSv2xoiKOrtwAZ+t/BJijcdHyY6sc
-# qeAWokxeUGnNYsCtyRZhgD2Fxk6e/Tr83MBx28/nEwnouN051v/wOlGhdLod2mJg
-# Q8IPYyICaQR2Zzhqw8vLsJDH+HbSdco/hFB+8TleG45WTCluxu8d7Igpsg8L1WAN
-# pnbNSWCvwwd4s1Z/9QY+Xsg+QWM0gWovITndbrpGYZAayW8GwwRsbvuxB8lcztMA
-# gSfYVFLziNzECM93VjkCeARAt1dCJ+tPF6tpKs/SBHfITaXmxP0tzcY6ZoZ8dqkt
-# fwE6DdyM2Sao8ZEdYeGfz2Mc+oE329UnAoOoUoM5omv/lmK28+9wRaC6NRz+ry1x
-# QmEsvzXBXUYc2fRk15cbujIuHRR5BQ7z+8i26CSnsR+eEFYjfHItOS72GXCx/9ZX
-# 5pOP6fUibcuZxJ9ISMQ1qxSRs45dwX80MmBBuvuEodW48ZO4NC1AzjMw79NiCfs1
-# rz07bjMHUNzBvru4nz09sv7v9GBmEa+vNZ+yqqbLiP2V23vKPWrzarNrQGViC8Wp
-# 9TT1RiDQv1e2drUZi63mg/5wRd5Vc8Em+5FMvi6dcbk8Ei35u5dX8DNGjbT+PKMX
-# oPqQlpyZY40/3sZiEE7FZo8=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTU1MDdaMD8G
+# CSqGSIb3DQEJBDEyBDCqoWU/FORFWsp0W3ae36vwZVgSyKktJkzv8bx7keYncGnv
+# Wx3/6cQKe44OjWUz68MwDQYJKoZIhvcNAQEBBQAEggIATwx76mUBB0LQwGJjJagW
+# K8j4g5yvRfOpKCfXE+6Ae4kmKWekgx9M9MXtzCGvwwsryqg/n1fY2TY18yIhj7Kv
+# eosLtYDZczkJJyn7k7EiZnRmmTsqYOncUWZZ/vxNA+Dy3t3PdrnMUPU2xPl7zsyO
+# mRnc9pk8elQCDvQpUj+TwyTk8N/OF4mpjo2u0SLa4vYQifuSaT9FaL0dNey7edCZ
+# gF+WHKRdRwzt/+FP25hdXY+86WJHZ3PjowTrIxTbM/2dsSjxe+T/3ePCQAw+S249
+# beGUKlrzVKb2wLpyynilkemDOkUAKBaJj68+mkwg2ZbyERcyv0tbxv8dMiEpTvdn
+# xvXe4qMcUuZO4QKS9PYJoJrbzLsPl0t3WjqCiQmuGbz55KBuUA9zxNEnC3qd97N2
+# fhQYTbD6Y60rSZiQofFZrMOJnTVpANuXaKmfLfjCa4tcEA4t9QRDcT+x7Ib5uA9m
+# rW6KY9V+Gvq3miqmIeoAP9T5ZSJWcV1jMBedSYNg98giRnOaIxiEbSZvJcyXW+TS
+# lKgeKf/2b8wmt/lz+Jcubnq2M+BgNTn7ZDl7GC06K1D9dLvdTU6Ha+cLKvfq1vud
+# bedKaO8jnD3uIkcBfzjOYkNEL6Q3FHRU3eZ/ftHsX6rWexZNDhyzcM56HUI5Ws1y
+# /lUus3RD2zUZFF1xNbicCUs=
 # SIG # End signature block

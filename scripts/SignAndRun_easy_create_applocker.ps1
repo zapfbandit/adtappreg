@@ -1,8 +1,8 @@
 #49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
 #                                                                                #
 #  Classification: ADT-PROTECTED/ENGINEERING                                     #
-#  File:           Utilities/ScriptSigning/GetCertificate.ps1                    #
-#  Modified:       Tue Mar 29 12:35:45 AUSEDT 2022                               #
+#  File:           Utilities/ScriptSigning/SignThisFolder.ps1                    #
+#  Modified:       Tue Mar 29 12:35:52 AUSEDT 2022                               #
 #  Author:         igor.dopita@adt.com.au                                        #
 #                                                                                #
 #  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
@@ -13,64 +13,29 @@
 #                                                                                #
 #54686973207265616c6c79206675636b696e67206d6174746572732e2e2e2074616b652063617265#
 
-$cert = $null
+$cert = &"./GetCertificate.ps1"
 
-Get-Variable true | Out-Default; Clear-Host;
-
-$certs = Get-ChildItem -Path 'Cert:\CurrentUser\My' -CodeSigningCert
-
-if ($certs.Count -gt 0)
+if ($cert -ne $null)
 {
-   $certNum = 0
-   
-   if ($certs.Count -gt 1)
-   {
-      do
-      {
-         Write-Host "Please select the certificate to use:`n"
-         
-         $id = 1
-         foreach ($cert in $certs)
-         {
-            Write-Host "$id`:"
-            $desc =  $cert | Format-list -Property Subject | Out-String
-            Write-Host $desc
-            $id++
-         }
-         
-         $certNum = Read-Host -Prompt "`nPlease enter the certificate number to use"
-         $certNum = [int]$certNum - 1
-         
-         Get-Variable true | Out-Default; Clear-Host;
-         
-         if (($certNum -lt 0) -or ($certNum -ge $certs.Count))
-         {
-            Write-Host "Invalid selection, please try again...`n"
-         }
-      }
-      until (($certNum -ge 0) -and ($certNum -lt $certs.Count))
-   }
-   
-   $cert = $certs[$certNum]
-   
-   Get-Variable true | Out-Default; Clear-Host;
-   
-   Write-Host "Using the following certificate:`n"
-   
-   Write-Host $cert
-}
-else
-{
-   Write-Host "No Code Signing Certificate was found."
-}
+   $logPath = "$PSScriptRoot/Sign.log"
+   Remove-Item $logPath -ErrorAction SilentlyContinue
 
-return $cert
+   Set-AuthenticodeSignature -FilePath "Common.ps1"          -Certificate $cert -HashAlgorithm SHA256 -TimestampServer http://timestamp.sectigo.com | Format-list *>&1 | tee -Append $logPath
+   
+   Set-AuthenticodeSignature -FilePath "AppLocker.ps1"       -Certificate $cert -HashAlgorithm SHA256 -TimestampServer http://timestamp.sectigo.com | Format-list *>&1 | tee -Append $logPath
+   
+   Set-AuthenticodeSignature -FilePath "easy_create_applocker.ps1" -Certificate $cert -HashAlgorithm SHA256 -TimestampServer http://timestamp.sectigo.com | Format-list *>&1 | tee -Append $logPath
+
+   ./easy_create_applocker.ps1
+   
+   pause
+}
 
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBRtG5BLaEtUvuh
-# EOzjvRyLUkKlfXD4hTdyvmG/3r3bTqCCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBB0Ic7a/yQMDAo
+# V1aoX7ZVcxJuH0afU/zrMrMdeXRGy6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -213,29 +178,29 @@ return $cert
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCBuUs2cepZqYDlCCzzhkKCwQU8FebDA0qc/SyAK+Stk5DAN
-# BgkqhkiG9w0BAQEFAASCAQBbAw5CObp5SAD/E5geUPhFLO9635MNQd4CUZBjodMD
-# 6uCWMe6eutDsn2ErJKsc0lEIPfn26IcpqCZ2NZIUDKG/+P1ssVC1peYaCnVaMYe+
-# xzZgzHGB26Rd9Xikd/SbNx0V4nhqi/MGt7G3A8NFr0SwRxWVm8+92qY0QmcztONz
-# KMBEpKVvUKYinxI/AjANpMpTzz7wzcNTAMQ44TcoJb2j1Zhx4At9xs8wtZH/nx+K
-# M1pgbjUqE0b8AG3tGWmTtsyLNUo3HV1Lq6s4u87qLxGPxPOf6Qkr0lgME9haABWO
-# 4cBQiFJ+ioPlh/cjX/IopF/AztmWg81niYDX+ZbRlwwgoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCCW44y6Awi05RdRp8n8mKdoV0r9caQ2QEulVQwaghqdLDAN
+# BgkqhkiG9w0BAQEFAASCAQAcfxsXPVLT6v4pPejmj1MxDBeworwYtVXVxTp+t0Je
+# kNRigwy6tPa13HOyfKUDmpzKlwcUAuPu/wk5wMvpa4j9csiHauHJZKSvdMoM2Z+3
+# 9zqgQIs3DOiRvPRbXUqxo8SCjgg1qbXHb0k2Rm8ZQZ+m+EUQ2qus2P0QaJLEFtfB
+# 7SmXEq5VXBc7L3XN4Q0pRfASvC2Ub73es4jaRYdIrHtgpWFzqWgRVUtgLZk7Z4Fh
+# FxPxriPytMqOxsu8bL1W1+lhv8R6IHBTqh/KWD1FSqjHEZNLmtVVAquYur0vlcT8
+# lLL6y6aMJffcq7Jn5NDLMbjmq0AC6VkA91erQIkGpJexoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTU1MTBaMD8G
-# CSqGSIb3DQEJBDEyBDAk/nn3WPYo3NmzKXNbd74lvBvtCdbcrEKMz3exbBQ5QVZx
-# bdQDJB9f1CjJsih5d4EwDQYJKoZIhvcNAQEBBQAEggIAIj1leezj4kQbfg8wVZwm
-# 5ncgii2zaLgyJuVMKDkoFp5vGZmFpincu67MSv2xoiKOrtwAZ+t/BJijcdHyY6sc
-# qeAWokxeUGnNYsCtyRZhgD2Fxk6e/Tr83MBx28/nEwnouN051v/wOlGhdLod2mJg
-# Q8IPYyICaQR2Zzhqw8vLsJDH+HbSdco/hFB+8TleG45WTCluxu8d7Igpsg8L1WAN
-# pnbNSWCvwwd4s1Z/9QY+Xsg+QWM0gWovITndbrpGYZAayW8GwwRsbvuxB8lcztMA
-# gSfYVFLziNzECM93VjkCeARAt1dCJ+tPF6tpKs/SBHfITaXmxP0tzcY6ZoZ8dqkt
-# fwE6DdyM2Sao8ZEdYeGfz2Mc+oE329UnAoOoUoM5omv/lmK28+9wRaC6NRz+ry1x
-# QmEsvzXBXUYc2fRk15cbujIuHRR5BQ7z+8i26CSnsR+eEFYjfHItOS72GXCx/9ZX
-# 5pOP6fUibcuZxJ9ISMQ1qxSRs45dwX80MmBBuvuEodW48ZO4NC1AzjMw79NiCfs1
-# rz07bjMHUNzBvru4nz09sv7v9GBmEa+vNZ+yqqbLiP2V23vKPWrzarNrQGViC8Wp
-# 9TT1RiDQv1e2drUZi63mg/5wRd5Vc8Em+5FMvi6dcbk8Ei35u5dX8DNGjbT+PKMX
-# oPqQlpyZY40/3sZiEE7FZo8=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTU1MTlaMD8G
+# CSqGSIb3DQEJBDEyBDBq5v7HshTImApRcjLwgpZk0AH5Y7R5qi7mU6LYZTOOHfJR
+# 4xUmVlSX7KOGAxGTNzowDQYJKoZIhvcNAQEBBQAEggIAE+RxartxU0tehP/Yuk6R
+# XAoYBskGDoLYsasiVefQQnjE4bZL0G8Ch0WaK9QSiRAFlz9lvmkX3w3P1c6H7Hpy
+# fsjEWKpURYOS35zb3AsVmgqNHbUZ0XwJCyfx5goiqlPTavjJwOpUkcn3K/MEh2UG
+# UqDoDi0OC1925F9GcsmYtc/paZ7TfmpcLWm4q5botUZpN2d+0H+NcKy0cfKQ/XEW
+# F1nghuOcDQXF8L9aBKx5xnATvlCmIVjB/bFlYox1WTSu7obFCG1K/as3p7YWNoOs
+# xm9yh0VubREJf/PDcMsVnmcDFkIu/5rVmX9Lz8l7K8Eh6mhtzEY1zMXZJqZuZnqC
+# E2GuSGq4yv1s3xzwkxCzFpdGtaGzDuh2D+xZKSlj3ZFHJg/sIsomKnaqzD4exX29
+# OQ+xKLCCw7K2uWZEkaT11pdQh6ZprZXw+X8BFy3wRLaooGXnm/R9JkLBwZBV0gNp
+# aJH5yU3apXaiLmCGNk5I7a1FQb84+S5fkeedzS/ccvOK3Pl/eg2zGQxXTZgwI3Kt
+# crpq+/GRruxij+NcN0tVV/7cZw3NcPYGBSAWs6kqWsKaeatb/7NyJmtMHGWJcvqP
+# lid6mwnAOXUyrDJlfBZj9bi/1g0nsR226VTSre3JCylUqVr6aPnEtrPidELxZbc6
+# EfbwGrOsl1H0MqGrQkndwLg=
 # SIG # End signature block
