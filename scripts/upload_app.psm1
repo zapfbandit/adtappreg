@@ -15,6 +15,11 @@ $azureStorageUploadChunkSizeInMb = 6l;
 $connectionConfig = Get-Config
 
 $sleep = 30
+
+$storageAcc = $connectionConfig.storageAccount
+$containerName = $connectionConfig.containerName
+$azcopyExe = Join-Path -Path $PSScriptRoot -ChildPath "azcopy.exe"
+$intuneWinAppUtilExe = Join-Path -Path $PSScriptRoot -ChildPath "IntuneWinAppUtil.exe"
 ##
 
 function FinalizeAzureStorageUpload($sasUri, $ids){
@@ -579,25 +584,15 @@ function Create-AppInfo {
     $appInfo
 }
 
-function Add-Application {
+function Create-Intunewin {
     param (
-        $LocalSetupFiles, # TODO: make this a list?!?
-        $Config
+        $LocalSetupFiles,
+        $RemoteSetupFiles,
+        $SetupFilename
     )
     
-    # consts?!?
-    $storageAcc = $connectionConfig.storageAccount
-    $containerName = $connectionConfig.containerName
-    $azcopyExe = Join-Path -Path $PSScriptRoot -ChildPath "azcopy.exe"
-    $intuneWinAppUtilExe = Join-Path -Path $PSScriptRoot -ChildPath "IntuneWinAppUtil.exe"
     
-    # TODO: cleanup on failure
-    # TODO: handle failure
-    
-    $appConfigContents = Get-Content -Path $config -Raw
-    $appConfig = ConvertFrom-Yaml $appConfigContents
-    # TODO: validate appConfig contents/format
-    
+    # TODO: do we need this
     Write-Host
     Write-Host "Getting permissions..." -ForegroundColor Yellow
     Test-AuthToken
@@ -617,7 +612,7 @@ function Add-Application {
     $setupDir = Join-Path -Path $tempDir -ChildPath "setup_files"
     $outputDir = Join-Path -Path $tempDir -ChildPath "output"
     # Download remote 
-    if ($appConfig.installInfo.remoteFilesPaths -ne $null)
+    if ($RemoteSetupFiles -ne $null)
     {
         & $azcopyExe login status
         if ($LastExitCode -ne 0)
@@ -627,7 +622,7 @@ function Add-Application {
             & $azcopyExe login
         }
         
-        foreach ($dir in $appConfig.installInfo.remoteFilesPaths)
+        foreach ($dir in $RemoteSetupFiles)
         {
             & $azcopyExe copy "https://$storageAcc.blob.core.windows.net/$containerName/$dir/*" $setupDir --recursive
         }
@@ -639,7 +634,7 @@ function Add-Application {
         Copy-Item -Path $allFilesInFolder -Destination $setupDir
     }
     # TODO: call app using absolute path
-    $setupFile = $appConfig.installInfo.setupFile
+    $setupFile = $SetupFilename
     & $intuneWinAppUtilExe -c $setupDir -s $setupFile -o $outputDir
     # TODO: this feels very fragile - convert to function so it is easier to fix
     $intuneFile = Join-Path -Path $outputDir -ChildPath "$($setupFile -replace `"\.[^\.]*$`", `"`").intunewin"
@@ -649,21 +644,36 @@ function Add-Application {
 
     $intuneWinFile = Get-IntuneWinFile $intuneFile -fileName "$($detectionXml.ApplicationInfo.FileName)"
     $fileSize = (Get-Item "$intuneWinFile").Length
+    
+    $info = @{
+        detectionXml = $detectionXml
+        intuneWinFile = $intuneWinFile
+        fileSize = $fileSize
+    }
+    
+    return $info
+}
 
-    $appInfo = Create-AppInfo $appConfig $detectionXml $fileSize
+function Upload-Intunewin {
+    param (
+        $AppId,
+        $AppInfo,
+        $IntuneWinFile
+    )
     
-    # kinda stolen below
-    $LOBType = "microsoft.graph.win32LobApp"
-    $Win32Path = "$SourceFile"
-    
+    # TODO: do we need this?!?
     Write-Host
-    Write-Host "Creating application in Intune..." -ForegroundColor Yellow
-    $mobileApp = MakeRequest "POST" "mobileApps" ($appInfo.app | ConvertTo-Json)
+    Write-Host "Getting permissions..." -ForegroundColor Yellow
+    Test-AuthToken
+    
+    $LOBType = "microsoft.graph.win32LobApp"
+
+    $appInfo = $AppInfo
     
     # Get the content version for the new app (this will always be 1 until the new app is committed).
     Write-Host
     Write-Host "Creating Content Version in the service for the application..." -ForegroundColor Yellow
-    $appId = $mobileApp.id
+    $appId = $AppId
     $contentVersionUri = "mobileApps/$appId/$LOBType/contentVersions"
     $contentVersion = MakeRequest "POST" $contentVersionUri "{}"
 
@@ -686,6 +696,7 @@ function Add-Application {
     Write-Host "Uploading file to Azure Storage..." -f Yellow
 
     $sasUri = $file.azureStorageUri
+    $intuneWinFile = $IntuneWinFile
     UploadFileToAzureStorage $file.azureStorageUri "$intuneWinFile" $fileUri
 
     # Need to Add removal of IntuneWin file
@@ -716,8 +727,39 @@ function Add-Application {
     Write-Host "Sleeping for $sleep seconds to allow patch completion..." -f Magenta
     Start-Sleep $sleep
     Write-Host
+}
+
+function Add-Application {
+    param (
+        $LocalSetupFiles, # TODO: make this a list?!?
+        $Config
+    )
+
     
-    # Add assignments to app
+    # TODO: cleanup on failure
+    # TODO: handle failure
+    
+    $appConfigContents = Get-Content -Path $config -Raw
+    $appConfig = ConvertFrom-Yaml $appConfigContents
+    # TODO: validate appConfig contents/format
+    
+    Write-Host
+    Write-Host "Getting permissions..." -ForegroundColor Yellow
+    Test-AuthToken
+    
+    # create intune file
+    $intuneInfo = Create-Intunewin $LocalSetupFiles $appConfig.installInfo.remoteFilesPaths $appConfig.installInfo.setupFile 
+    $detectionXml = $intuneInfo.detectionXml
+    $fileSize = $intuneInfo.fileSize
+    
+    # Add new app
+    $appInfo = Create-AppInfo $appConfig $detectionXml $fileSize
+    Write-Host
+    Write-Host "Creating application in Intune..." -ForegroundColor Yellow
+    $mobileApp = MakeRequest "POST" "mobileApps" ($appInfo.app | ConvertTo-Json)
+    
+    $appId = $mobileApp.id
+    
     Write-Host
     Write-Host "Adding assignments..." -ForegroundColor Yellow
     $listAssignmentsUri = "mobileApps/$appId/assignments"
@@ -725,6 +767,11 @@ function Add-Application {
     {
         MakeRequest "POST" $listAssignmentsUri $($target | ConvertTo-Json)
     }
+    
+    
+    # Upload intune file
+    $intuneWinFile = $intune.infointuneWinFile
+    Upload-Intunewin $appId $appInfo $intuneWinFile
     
     # Done!
     Write-Host
