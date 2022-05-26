@@ -1,8 +1,8 @@
 #49676f7220697320746865206265737465737420636f64657220696e2074686520776f726c642021#
 #                                                                                #
 #  Classification: ADT-CONFIDENTIAL/ENGINEERING                                  #
-#  File:           Installers/IsoCreator/Common.ps1                              #
-#  Modified:       Wed May 25 15:40:51 AUSEST 2022                               #
+#  File:           Installers/IsoCreator/AppLocker.ps1                           #
+#  Modified:       Wed May 25 15:40:50 AUSEST 2022                               #
 #  Author:         igor.dopita@adt.com.au                                        #
 #                                                                                #
 #  The contents of this file (including this header) belongs to ADT RnD Pty Ltd  #
@@ -13,211 +13,100 @@
 #                                                                                #
 #4f7572732c2062757420776520776f6e74206265206675636b6564206966206974206c65616b730a#
 
-$name = "adtappreg"
-$loc  = "australiacentral"
 
-$storageAccountName = "adtappregacc"
-$storageContainerName = "adtappregcont"
+function CreateAppLockerPolicy {param([string]$sid, [string]$appLockerXmlPath, [string]$folderPath)
 
-$subscriptionName = "ADTTest01"
-
-$rgGroup  = $name + "-rg"
-
-$sid = "S-1-1-0"
-
-# Functions
-
-function ShowIt($txt)
-{
    Write-Output "**************************************************************************"
-   Write-Output $txt
+   Write-Output "Creating Applocker configuration `"$appLockerXmlPath`""
    Write-Output "**************************************************************************"
-}
 
+   $hashRegExp = "^SHA256 (.*)$";
 
-function UploadFile($filePath, $azDest)
-{
-   ShowIt("Uploading `"$filePath`" to $storageAccountName/$storageContainerName/$azDest")
+   Remove-Item $appLockerXmlPath -ErrorAction SilentlyContinue
    
-   echo "$filePath"
-   echo "$fileName"
-   echo "$azDest/$fileName"
+   echo "<AppLockerPolicy Version=`"1`">`n" > $appLockerXmlPath
    
-   $storageAccount = Get-AzStorageAccount `
-      -ResourceGroupName $rgGroup `
-      -Name $storageAccountName;
+   $allFiles = get-childitem $folderPath -recurse
+
+   $types = @("Exe", "Msi", "Dll")
+   foreach ($type in $types)
+   {      
+      $files = $allFiles | where {$_.extension -like ".$type"}
       
-   if ($storageAccount -eq $null)
-   {
-      Write-Output "Unable to locate Storage Account ($storageAccountName), unable to continue..."
-      exit -1
-   }
-
-   $storageContext = $storageAccount.Context
-      
-   Set-AzStorageBlobContent `
-      -Context $storageContext `
-      -Container $($connectionConfig.containerName) `
-      -File "$filePath" `
-      -Blob "$azDest/$fileName" `
-      -Force;
-}
-
-
-function GetFile($filePath, $azSrc)
-{
-   ShowIt("Download `"$filePath`" from $storageAccountName/$storageContainerName/$azSrc")
-   
-
-   $fileName = $(Split-Path $filePath -leaf)
-   
-   echo "$filePath"
-   echo "$fileName"
-   echo "$azDest/$fileName"
-   
-   $storageAccount = Get-AzStorageAccount `
-      -ResourceGroupName $rgGroup `
-      -Name $storageAccountName;
-      
-   if ($storageAccount -eq $null)
-   {
-      Write-Output "Unable to locate Storage Account ($storageAccountName), unable to continue..."
-      exit -1
-   }
-
-   $storageContext = $storageAccount.Context
-   
-   Get-AzStorageBlobContent `
-      -Context $storageContext `
-      -Container $storageContainerName `
-      -Blob $azSrc/$fileName `
-      -Destination "$PSScriptRoot" `
-      -Force;
-}
-
-
-function GetPackages
-{
-   # Only try and install packages if we are in admin mode   
-   if (([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole( `
-        [Security.Principal.WindowsBuiltInRole] "Administrator") -eq $true)
-   {
-      $nuGetInfo = Get-PackageProvider "NuGet" -ErrorAction SilentlyContinue
-      $nuGetVers = $nuGetInfo.version
-      if ($nuGetVers -lt "2.8.5.201")
+      if ($files.Count -gt 0)
       {
-         ShowIt("Installing NuGet package provider (at least version 2.8.5.201)")
-         Install-PackageProvider -Name "NuGet" -Force
-      }
+         $fileHashBody = ""
+         
+         foreach ($file in $files)
+         {
+            $filePath = $file.FullName
+            
+            $signInfo = Get-AppLockerFileInformation -path $filePath
+            if ($signInfo -ne $null)
+            {
+               $fileInfo = Get-ChildItem $filePath
+                  
+               $fileName = $fileInfo.Name
+               $fileSize = $fileInfo.Length
+               
+               $hashInfo = $signInfo.Hash
+               
+               $ok = $hashInfo -match $hashRegExp
+               if ($ok -eq $true)
+               {
+                  $hash = $matches[1]
+               }
+               else
+               {
+                  Write-Information "Hash reg exp didn't match for $filePath ($hashInfo)" -InformationAction Continue
+               }
+               
+               if ($fileHashBody -ne "")
+               {
+                  $fileHashBody += "`n"
+               }
+               $fileHashBody += "          <FileHash Type=`"SHA256`" Data=`"$hash`" SourceFileName=`"$fileName`" SourceFileLength=`"$fileSize`" />"
+            }
+            else
+            {
+               Write-Information "Unable to gather app locker info for $filepath" -InformationAction Continue
+            }
+         }
 
-      $azResInfo = Get-Package "Az.Storage" -ErrorAction SilentlyContinue
-      if ($azResInfo -eq $null)
-      {
-         ShowIt("Installing Az.Storage module")
-         Install-Module -Name "Az.Storage" -Force
-      }
+         $guid = [guid]::NewGuid().ToString()
 
-       $azResInfo = Get-Package "Az.Resources" -ErrorAction SilentlyContinue
-      if ($azResInfo -eq $null)
-      {
-         ShowIt("Installing Az.Resources module")
-         Install-Module -Name "Az.Resources" -Force
+         $fileHashHeader = @"
+    <FileHashRule Id=`"$guid`" Name=`"$name`" Description=`"$name`" UserOrGroupSid=`"$sid`" Action=`"Allow`">
+      <Conditions>
+        <FileHashCondition>
+"@
+              
+         $fileHashFooter = @"
+        </FileHashCondition>
+      </Conditions>
+    </FileHashRule>
+       
+"@
+
+         echo "  <RuleCollection Type=`"$type`" EnforcementMode=`"Enabled`">`n" >> $appLockerXmlPath
+         
+         if ($fileHashBody -ne "")
+         {
+            echo $fileHashHeader $fileHashBody $fileHashFooter >> $appLockerXmlPath
+         }
+         
+         echo "  </RuleCollection>`n" >> $appLockerXmlPath
       }
    }
-}
 
-
-function _LoginWithFlag($useManagedId)
-{
-   $connected = $null
-   
-   if ($useManagedId -eq $true)
-   {
-      ShowIt("Connecting to Azure using the managed identity")
-      $connected = Login-AzAccount -identity
-   }
-   else
-   {
-      ShowIt("Connecting to Azure using subscription `"$subscriptionName`"")
-      $connected = Login-AzAccount -SubscriptionName "$subscriptionName"
-   }
-   
-   if ($connected -eq $null)
-   {
-      Write-Output "Unable to continue"
-      pause
-      exit -1
-   }
-}
-
-
-function LoginAsManagedId
-{
-   _LoginWithFlag($true)
-}
-
-
-function LoginAsSubscription
-{
-   _LoginWithFlag($false)
-}
-
-
-function LocateStorage
-{
-   ShowIt("Locating the reource group ($rgGroup)")
-   $resourceGroup = Get-AzResourceGroup `
-      -Name $rgGroup;
-      
-   if ($resourceGroup -eq $null)
-   {
-      ShowIt("Creating the Resource group ($rgGroup) since it was not found.")
-      $storageAccount = New-AzResourceGroup `
-         -Name $rgGroup `
-         -location $loc;
-   }
-   
-   ShowIt("Locating the Storage Account ($storageAccountName)")
-   $storageAccount = Get-AzStorageAccount `
-      -ResourceGroupName $rgGroup `
-      -Name $storageAccountName;
-      
-   if ($storageAccount -eq $null)
-   {
-      ShowIt("Creating the Storage Account ($storageAccountName) since it was not found.")
-      $storageAccount = New-AzStorageAccount `
-         -ResourceGroupName $rgGroup `
-         -Name $storageAccountName `
-         -SkuName "Standard_GRS"`
-         -location $loc;
-   }
-
-   $context = $storageAccount.Context
-
-   ShowIt("Locating the Storage Container ($storageContainerName)")
-   $storageContainer = Get-AzStorageContainer `
-      -Name $storageContainerName `
-      -Context $context;
-      
-   if ($storageContainer -eq $null)
-   {
-      ShowIt("Creating the Storage Container ($storageContainerName) since it was not found.")
-      $storageContainer = New-AzStorageContainer `
-         -Name $storageContainerName `
-         -Context $context;
-   }
+   echo "</AppLockerPolicy>" >> $appLockerXmlPath
 }
 
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-<<<<<<< Updated upstream
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBeocw9nGvv6cMr
-# CFR2FavSWfzFniCuug5583wMhHreg6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
-=======
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCA6xEoUSVTBiUaG
-# bGAOA39BWtegv+kBHnL4NqXYQrd+6qCCGbswggWRMIIEeaADAgECAhMVAAAACBly
->>>>>>> Stashed changes
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCB+U190cPzT0gLI
+# aBY0nCt5YpxqQPhGEP44S/nNU+AE4aCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -360,56 +249,29 @@ function LocateStorage
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-<<<<<<< Updated upstream
-# CSqGSIb3DQEJBDEiBCCOfOoXKoMkj8RxO8Y/fGZana1ffaR0CsD1gnbH258vUjAN
-# BgkqhkiG9w0BAQEFAASCAQB8Q5T5Yw8P44HbN4njVVG0LtYKagWSDYNpDZexYlb/
-# SkiH/QpJlXU1OvIM7EU2osRG70vxEIsIpJCbrDpbe/s/ciRb+COK9JPNCM314E8T
-# FrGpoEvfWJ4ZIOwBLaWzF/4nE63L3si96luAb9EQQs14VAwgPEE/bt+M62YEJ8gW
-# QiORA3/jP6Xv3ZAWqVASXAmi6ZeBRwKIhbNsm36c2m+3nvxwGCqh+0LVBEu5VAf9
-# YIdxHNukW87fHriquI/B8WTssNFNRwFuj9G1GCGCzAqeZ/1ecVDWscFQTtVjKfR2
-# s66hCwZs8WvN6C1ZLwO8Zs9Yh5J5TPzV9crCumG9TUtroYIDTDCCA0gGCSqGSIb3
-=======
-# CSqGSIb3DQEJBDEiBCCcBdt6tc3uzXBT3ulYwWMxOrNswjr+f1dLJ1tEcu2BgTAN
-# BgkqhkiG9w0BAQEFAASCAQAoMZzgKVV436gHexzTOJz4nXP0EIlUV07TzRqN3bwa
-# CruItI3SVayXxJR25wmgAsng41H2lL9xp4drRTCiXTSFfyTmzJ0gpnMr+vpbViYd
-# Mn/ceQ35eqtY3sKJhw5R0N3pGvCW2A1+R90WAt6Oxl2RkxDaAbakt69d6CLdUUFZ
-# 7GLqsznUThuZZHFQw+dYvEwLbJtpHcLjSypHLSY/J0l1DQAhgpFGuUrN04cyqgyV
-# 4Nbyf2JCY+k/WSPrW2RAG4SVkR/bZ+CJORx/zEHFUXfuprpDWVh5urBOl6jApxRx
-# BVX7BIbiTG/yBUCS0+WFDHuJWU3+NW0wGQGgsF4KPhazoYIDTDCCA0gGCSqGSIb3
->>>>>>> Stashed changes
+# CSqGSIb3DQEJBDEiBCA2ATEubOnWd+krkMGxuXp7cja1RMY/6TpC4wfsDdhsTjAN
+# BgkqhkiG9w0BAQEFAASCAQAM67V022BqeA1zi2aNcbpT8syfjBwaATIHIaOANTOu
+# bAjoPR3SXfs5+eoHYR6+SdU/3OdQWnFOtYbYMIzSl3UcOt8k4caoHknHXTBVTlS2
+# cjx30kdPFIDBBqN3Pp2hJPRfWyUQE30gF20iH1SDDXYagKux4u/ag5yKrcQb7oDC
+# oy5rA25CW7cZA6tdrKjRfedOtHHoneEhKGDoA6g/jkskN5x20ueOKHlGeoTDnnL4
+# OnHvD0um076aKVjnFLcMQ4+e21rF6Nca935NxcKkIJ+RcGPvfR8s9JmZt6JCZ1wz
+# 6I++P9LAa5E4emVtQAykXIomjZ47g7rXTw6Btkwlb71ZoYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-<<<<<<< Updated upstream
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUxMjQ2NDJaMD8G
-# CSqGSIb3DQEJBDEyBDBb36s5PdDdGJHwxLWtAxnMXTAVHYUCL1UmH9JzbSUh7Lun
-# 3jFvaX9j0P3Av3sOXikwDQYJKoZIhvcNAQEBBQAEggIAhMm0viO9Y86HyBXUAjk5
-# P7DSup0ew63PSBvlcQMwbNE1T0yhz/iQJr4bytRCQEgj+JUM7YAE28soV5iHeEra
-# TI3YaIpUCaAOZj55vK7r8ObXKGK53xICFaIiZvfMekjzArHNMWWKfXwRZJgdEaGu
-# MJvwktxgfeupZB+GXBn4bmbd6eX+xkSBns7ign7ARcgUmlTKaiZ4inosYpPr+lBx
-# tdlswfB5GEk0lapL2FXYDgwqS08994EyOShviPzpA2eInQweMipk4koMQdqX/3mA
-# ukNd9JHljM57gFtSI7ikOcnPKeOgttcEBRPN/ezNmRlr/wl9FfCG1SkpWYwLZeKi
-# Egp0Q5rfZUs6q1RQk0IzhHW5yUuxs2FBaodhdPrxS7M96DE5WLqgBioBRm2pN2js
-# 4P2jsI7/t8RttU1LDgpUEc+1WmjwQqh1/JTDH+Ad92MrF3HJMAcPXDomGt/WC8xE
-# Yt/SfPLyc9fby71c2ubeSzKix0sUqujbF14jAmX5eN78Jzucwsa6Kyh1Q8+gchuy
-# yjJM8fnzlqYUjY/0IhpqYC7rpR6y9qsc1NfKhcquL/AfIzjj4wuLz9n19vI5TkFy
-# 8j4mxXqIGVTVAZfRoGN9Nvs40xo3/92uQuxqKYt9q007HL38+azefCipK/YP5CuX
-# Pr7/H8ehbtTKYVTYKvKUfgk=
-=======
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjUxMzM3MDlaMD8G
-# CSqGSIb3DQEJBDEyBDDSdXvzBb6IeCqDxIjNedzXHeFxpHkMwp1RmvfGl9BYxIdV
-# JyWd3ZHEybh6HGCE4C8wDQYJKoZIhvcNAQEBBQAEggIABL1UP/ocBNNfbPcbieZe
-# SOcRXBJLZu28GYykGL6jAZ4anKumSAIiKhseLKV1zE6yZG4aNBwHrnnPWY3HqnmN
-# N774qf3rKCmpThslV7H+poTjgz3tvZ4dmFh+gAQaExlU6mMnq/Sff6ZKzbCPb1WA
-# hL1/67nyyBs1N9aIItYYOHrPR4NBuy4p8vX2thqlTNqDDQrBJdZooviueflHCZUs
-# yEe3V7p6SWaiYu4kq2V5y9pGNumNOtkYTCrb6bx4VFh8EATxKQQgHPU78sMsOyUq
-# a9/vY7++3oCc5wLndPnbZdysx1OiR0l1tDANm21KTmSyiKvmh9x1JerKk8GW/LnC
-# e2xkGmxY1e/WjLEb79F9t+msPsgEM0lWcRH3F2jCT2aeN8aennvr35mbJ+Rs2T8l
-# edt1ku4jT536JtDgHe57ru8YQ4dV4+E+WJDK6KGATpZKzrMBFLB0MAgTbEw9nrn+
-# 18r9rkpreNJ/SxStIUasRfloBT80oYzrFQn6PV1/WjqEEsMkdzt743yHL5HnUBWr
-# eGzLV9dQzpcz+E8jQVV6nDJ8UEsYBd0GSzC1AxXANeCLd4elSAzNL1GbR5bOWScM
-# r2qEGwT0grr9Vyit8izTJzkqriKk6YI/GHPh8wWc7AOSNol3+neByF3ZFV7EUBU8
-# f82uPgzJdrLiRskR6WEiSqs=
->>>>>>> Stashed changes
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMDA1MjlaMD8G
+# CSqGSIb3DQEJBDEyBDANy/Y/hv+IWlvUBGUe1pbZFqWeaUXVSQrHNUeSasjQZddH
+# g8unuJKU3WWZ+9szvAUwDQYJKoZIhvcNAQEBBQAEggIAM0uBeNzvsGcRk88d+Nuc
+# 7Zj2tJNSVRzmMmkGnDhgtzuUBM2HBNTnJJBPscTEP2UetifiwmqQ/WLnAiBv+Szd
+# uG3xfmmdjgpMS7rTVdmrTd+y+w69z5//LWDl+nEAv5zwykhLFlhc6ws8iBDqYHuu
+# 2oz0NuvO6azDAyKYOW9Wi8hDhELDQ4vCzEpz5nekye3CXFSxK05QJYhgQxmClG5k
+# inbeIsnprhJeii0Ty6f3yvFQYQU4mW3yD7/UZqXEc0ycnA2DEkfZVc6LmwVOptRz
+# U5V9V5fTwVQ13tsfurxzpBC6X8BrsiYzTem4/fhC5J/xkYGeKp3I+hKTTTp+PeLC
+# TuRN8Sb4YaZbbFCpouYlTJ0yTE2b2eXxwj3VT9D8i/oJKhQ422ZIxoXspqnnpCZ2
+# XUZuA/DasI9Q5+BbkhdIzG2I69TI8ocor2uQql02s4qgP6lelGgrvSg6Pbkhn7gF
+# RnHAW9xGh4Flj8uS1VNjx642pei0wga1Y6b5wGHo+/L4pUpxv1DQawyCE1RKKkyO
+# +/qDlM6kS2HIASjbCYiMLl/+3YCr9lz98cE26bXcyPn4qGnHAaR74XRIp4LDMi6K
+# OV4z9rXTKk85/vOuWH20R1NnsBvcCfUURdDmRbkWtvF4TCiEMKfbBBkNWgYh5Qic
+# yOApf4Fd0KnHdPY/gUDPgig=
 # SIG # End signature block
