@@ -188,7 +188,7 @@ UploadFile "$appDir/applocker.xml" $remoteDir
 Write-Host
 Write-Host "Creating pull request..." -ForegroundColor Yellow
 & git add $rootDir
-& git commit -m "Adding $simpleAppName $appVersion applocker policy"
+& git commit -m "Updating $simpleAppName $appVersion AppLocker policy"
 & git push --set-upstream origin $appNameVer
 $ghExe = Join-Path -Path $PSScriptRoot -ChildPath "gh.exe"
 & $ghExe auth status
@@ -198,7 +198,7 @@ if ($LastExitCode -ne 0)
     Write-Host "Wake up! The instructions below require user interaction..." -ForegroundColor Yellow
     & $ghExe auth login
 }
-& $ghExe pr create --title $simpleAppName --body "Approve $simpleAppName $appVersion applocker policy" --head $appNameVer
+& $ghExe pr create --title "$simpleAppName $appVersion AppLocker Policy" --body "Approve $simpleAppName $appVersion AppLocker policy addition/changes" --head $appNameVer
 
 # Done/cleanup
 & git checkout main
@@ -214,8 +214,8 @@ popd
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDWRYnR66xu7Edv
-# coccDSUQmW1F4hOUnAFYE+KVzJeG06CCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDzyXdlQAFwUD6l
+# 68YQQZrwuMg4cCHntiUotulxcIkJLqCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -358,29 +358,29 @@ popd
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCAP7ojlWln/6mFAj+J82vKFRi+Jsxwd+s9p34oUa1sJFDAN
-# BgkqhkiG9w0BAQEFAASCAQByJ1NaC6G3h4/SS/kK+u/PLbuY3axETY821TB2xJmO
-# 3CFuTqFjjilqGIn4fRHYHJznn/W0ia1FWHv/3mb5mXk5yKQQVI1x6zICiiNobCc0
-# qNb7ootwCK8LNB2Wyu9M4bpvzmp2SGpncYQhzHnRklGYdGcrvdJErkBWg1Z2TSuS
-# bT6ka3u7rB21XAxV8I300HbGTKsCmiENIAijvC257P2KOtJL+i6hErgDa/KNvsFM
-# e0gYAanaNNPpeeCtr36ZUiaVD/Sq69UoVLdoKxjUsQRZKmYlRVIJ+1nxmtU67n2D
-# GXysyfU2QlhV3MqmwqkrAup0C3r8964PQimE/UG4pztnoYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCD8MsD3OjIIOa90U20SgsW19V91VKNyePm5nkTcptdSYzAN
+# BgkqhkiG9w0BAQEFAASCAQB3ihCms8+7Fnus5kwz04FCWdpiCdaj2I42zmtJ5o/g
+# Rm7RM5V1ENEWjFg2JRR3a+Mg/TcETutmarsRCPDTErI5iQobzkMzuzw/NCxpGYDg
+# 8CXxl3PCXDzEHTHOlAnqeY+3KWFktRUgpL+98edBCxkdMLjRIziPZ1uiC0MtbBmU
+# rpROtFmtqEjXIGca2j++Qjzpw6dW4x7ey+IzsklKlVqjwobDnQarwacLJ61PQWN/
+# JP20pUyqnze8UGdng/gIbxzSqKTwk9ogGx50F8tsnE0ssjjDXYMbBbMrr5laFecb
+# UTigbImj4U23R1ygoXOvtEXuzIbkWzLYfRgv6ZXHqBf+oYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwNjAzMzRaMD8G
-# CSqGSIb3DQEJBDEyBDAm63kndzwej1gvxt0C9MOjUABInNdZakd11Jdwn8AqTQFG
-# WetUBLOXPL76EW72tTgwDQYJKoZIhvcNAQEBBQAEggIAJk19Y6/gg1AYyz7PyIfM
-# SVs6d1OJZtldm1E3Hk0hewKsWshkkWXuJvMR1gN3/+T5xQkrfJ31dQr+dPMtFJG+
-# dmPjzq28NZIMGSKK3Puw3+WF1tjBrTMP0e1OPU5TXn87Ti88i7OA0cwck+yCYV3/
-# LpNxONpnF/jMF1H+3DCRrXouhkVCoLMFuT31BzYp9/0WjBdjGEi4UPmyaxsmIgmm
-# ViCRV2g31hEgPVMzVe+KEcuPm7EYX+47oL5ynZbtVNKMzeri6qvV8blvCXF6p9cD
-# xXTV3e1BOZna/62ja/ivVQKOQPdNUbEsIZTlGEkRLBy2QXIoTE91JOBRgh+3BPTb
-# FwV1xblA2WnjFyEkKNQOeZufHy+wr/VgWJbsU1x/iNzoS716IN4rGvvHgf7gGd/V
-# uRzelTba/WJLlU2wZ/GgxDSaTEkPat9tx+/04O+kDtZUU4o2YwyCjyfm4xAxvsQO
-# Mmkit9xyMIezLdZMNSGVutGMAxuALqrYRhNQYmNIjrHaIo2SwVy06QbQ8IOYwOhj
-# fIyDNSVecClEysX76MnKaDRBd89jC1iMUgJOuviWsB189dtuk/Df+kYWxsE9goX1
-# pN2YPSe7O3nAKOilwYLxDXiBMtbeF0v81hgy6CR3KoofnGgOBaH18/jHNw2dqmyv
-# z7gbvX28RZwkybgbFFcKmzE=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwNjIyMTBaMD8G
+# CSqGSIb3DQEJBDEyBDCm56pKC2/cTV3AS+cQIOepC1Bu0QOnnb+6snpv0ZYKP0q1
+# 5Z1m5/lZXec8aSdf0wEwDQYJKoZIhvcNAQEBBQAEggIAJeM+u/EMrimA97VEn9uS
+# AR1Hrj7JnyUHjuwMP6wAoPn5QqKZRx9pfeyyyT7fQU4jH2SyV17lWTbOVtHOzRgg
+# 6U7lBOIA7K/ARAMxoEd9WiA122wREHr57JrDHv2W8Y40Q+tT+6pxj5Ti+gzyn/Uc
+# FMx0bEKn50OK/oUqOqXDwjffp5fsRxN0ClIXaZTRj6nTdCDyYvoQxA+aGLwiEqxv
+# PPjnCpc4++hunqCJVtjEnwLEjG0DBsDUcEaaw8mXGN/OjDy5Bf91HsHT+OA7g7YW
+# Izx+opKyuyTOJL3wuO2dj9H5wQBIGwwV3cGY614VgYGP/aUhlNVx+PxXT7jb/fjY
+# PG4rH4sBHCImtqRTeY8QiYCaRENXDOmA/K1izouMw3PkZfEIMGjnc3UupR0PYS65
+# 8q0YwqPPPRGi56YX+XZU/JWq4DOMWG9zEQQPy6lWez27MmAEanpg3hdL8NAjPmmT
+# ixclAV6GumBNHacG4h4XxzX+A+valtSzEzW0hjLrdSXMfhw6TamX6whBJ5GgcucM
+# uWyXBT3a4xNh4Yhapx99qAN6T0ecpupzdUQTiEfK/aHUVu7i8pBcuRNKaO15h+cT
+# oRDRi7g9om0zJ4mQiNeLbvPCbxRPpvDd/2kwvDFLYPTJiCm1AwbJ/1FijGRkhip5
+# kb5W/2YYUm+tIvgBmuBMwpc=
 # SIG # End signature block
