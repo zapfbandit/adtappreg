@@ -39,6 +39,8 @@ function UploadFile($filePath, $azDest)
 {
    ShowIt("Uploading `"$filePath`" to $storageAccountName/$storageContainerName/$azDest")
    
+   $fileName = $(Split-Path $filePath -leaf)
+   
    echo "$filePath"
    echo "$fileName"
    echo "$azDest/$fileName"
@@ -67,7 +69,6 @@ function UploadFile($filePath, $azDest)
 function GetFile($filePath, $azSrc)
 {
    ShowIt("Download `"$filePath`" from $storageAccountName/$storageContainerName/$azSrc")
-   
 
    $fileName = $(Split-Path $filePath -leaf)
    
