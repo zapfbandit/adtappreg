@@ -144,9 +144,6 @@ $installAccount = 'system'
 # Make app info
 $simpleAppName = Simplify-AppName $appName
 $appNameVer = "$($simpleAppName)_$appVersion"
-Write-Host "$appName"
-Write-Host "$simpleAppName"
-Write-Host "$appNameVer"
 & git checkout -b $appNameVer
 New-Item -Path $(Join-Path -Path $rootDir -ChildPath "apps") -Name $simpleAppName -ItemType "directory"
 New-Item -Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName) -Name $appVersion -ItemType "directory"
@@ -359,18 +356,18 @@ popd
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTU1MDRaMD8G
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMjMzMzZaMD8G
 # CSqGSIb3DQEJBDEyBDBHAqsuvkJczxP1wpMDXCJ6d45WlnJhm3r8Y2buTdxlFQ6C
-# hg1H2ts5HlSP091UnOIwDQYJKoZIhvcNAQEBBQAEggIAY03NAtTJIi4qmO4KzyHR
-# DiB0P7BjyWz3wsSczQ1J6kI8G6zjrs33oqZZT13IY4aWaUzfn9w3zSibuzADAf36
-# z2fuftH5vVPELk+OU/dq3CCQoS2Sqz+DQ6zJN5D0Y5nRXbz59QSWks1cXP8d9bGl
-# MZ28A2gk4Z4+sk27be6SU76Z6HR3cwtKQ6+o7Bmur/Md09B59YMQxAyi9tbeK48N
-# e+rXEE760uskbX+BruNzVHA6s1QWE+EFZ6wJjyXpshyHGyhpGpcnexgBm2dvDZsK
-# H0iHznWbGUhR9KmwAcDBiST7sx6btJxkgmC6V0myDJoKsQYpwxqFXn49Gnq7Un86
-# 9asr324g1Rh47oHucS+pRSsVH/aI4C0OItaGYudcYG3vnZI0FTVIv+RiJAxtkJmH
-# zNe3Ln2KXErzduA5s8/s4O8wIb8Y3qWvm7dINlg5SlCIVrn43LrClvftSTVGhl2Q
-# hUKD+IZ+Y5CMlKYu08O1UIfYc32dtbBhNX5utDm0fBGpKLEPnZwZZG1rbsoRVsdt
-# 54LpAecHIwDJK31Wg18afy7RRR72BsGCHC5VJ6WVIeGteXaJKSwmgoir7I5v9ciI
-# LRSnqWRj2FACPsDjI5dxZdlPOvW/CYQSetZB4+SILUi5FFcxge4wvqqDXuGYFNqF
-# i1ayblNSmP4/7lXDM5l+ql4=
+# hg1H2ts5HlSP091UnOIwDQYJKoZIhvcNAQEBBQAEggIAJchq+S26XtqMfQDP7quE
+# 4t6KrJKpdPrlE4/GcqmMiscZwbeqkN+qNWOyIu32L7jflRNrZq+JgvOcPOJ0Dm+y
+# O5ewN0oDS3j4v+ZDqGVfMOxM7Aj9O3kAIZFhlEE9Wa3ZTHk85e8R1BdnJ2Ta3Fdu
+# 6Dkj+cEsrQFu5lMTJh5WKsTQ7P37UIJd4o8KG8BZHOEKnDg27ECojVuF2mi4bAi7
+# b6SqUICnRxgKyhRS5K3P9wqpaHd9s7ZybKERDr3nHclGlkljVO21G0+kCLbVk4ML
+# RGDrq8laEMJZ46l41hqaJb2wk8qzS1zfj/+E0lQfiIZhPySz2YMsP48G3dJQedm5
+# 24G2musEYIFRzH96pQ0HPHxi44/SGZ2WB3RSzEhJ0joSitiskRmIkNiUckaiujbw
+# WHeo9nJxcH4JyKA8rgo3wI170imL0dzi+uEd46dBgKIPrSvZeQosdGTWXmg0lrPw
+# Vn7RwqhL/FjsDrCs4EGpiy2fIKxwJ62JhINzYMabNrsxLfJWFEftjz6X5EJ83RK2
+# f9r3Zw7y8IFmCU+FNxWps1x4KMQvZJzpV1yTUTf/L0MErX+tyxnhAdikdbzRvGqo
+# KUtBjHkhRpmB1vCNiWI35iPKgZWjZWF54Cs0QsF6DlstES96IYhWvG3yCXcWqWsQ
+# lyHIz11BPxQ6g5rjgU36Fbo=
 # SIG # End signature block

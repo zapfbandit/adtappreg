@@ -158,6 +158,15 @@ LocateStorage
 
 UploadFile "$appDir/applocker.xml" $remoteDir
 
+# Done/cleanup
+& git checkout main
+& git branch -D $appNameVer
+$folderToRemove = $(Join-Path -Path "$rootDir\apps" -CHildPath $simpleAppName)
+if (Test-Path -Path $folderToRemove)
+{
+    Remove-Item -Path $folderToRemove -Recurse
+}
+
 popd
 
 
