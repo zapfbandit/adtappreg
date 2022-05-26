@@ -165,7 +165,7 @@ function LoginAsSubscription
 
 function LocateStorage
 {
-   ShowIt("Locating the reource group ($rgGroup)")
+   ShowIt("Locating the Resource Group ($rgGroup)")
    $resourceGroup = Get-AzResourceGroup `
       -Name $rgGroup;
       
@@ -366,18 +366,18 @@ function LocateStorage
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTA3NDBaMD8G
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYwMTIzNDhaMD8G
 # CSqGSIb3DQEJBDEyBDC43u13IzXuH5EgEoJH0iE6DXKgly1lIOBry/x4jPCE9LV6
-# K/dqzYf+9rWTKrvzH+4wDQYJKoZIhvcNAQEBBQAEggIAXfyASEOe66flm0qvLOt2
-# thJa+mmHqF3qkE+64JmLHE0hSBDLB8EkbwcwD+BMP+NJuq+lc19wwThikucTQs6F
-# +JLSAtIxXM5Vd6A7lsXhCPXjWrTZfw4s5QYQ+OwOdnr6wEDv6DBlyIoo7eG9Sz4v
-# Nsg4YVBvuMCrK9guSSEf59WhswSAB5cQYCfhHslCxXYpWxy/kPkjQml6FG+cHadL
-# D7FmLFUxswkHe1kC6vGYw0nY4U4smRsWzZ44BPCrB3qTdSHCkXKmoHp+trdnDAbU
-# 33tVUcHLo+xomF4NpF5vWCiM+LthmPvL+ypi1/au/3CMaqImBfb7Ic2cz1eegMvz
-# yRv7AW1U9XWAivQ1j9viU4bOYP/rVlHn94qatadsAnnjPokO0Yhm2xV6i+zlIWuf
-# 1DHOe7Qz7jNqZhPQ0IQ3rcYIunP4h0za1pf9qzisW5VOAPIdLhJH1/bYuE5Gfx8w
-# WkukqyR4EiTtJr5bISsLMeWvvT3I0m/HCHlVAHZ4ttWttDorTwjllNgtAdkVKBMT
-# UsnUeU5XV/P2fcXGn4TkQIt/boBFPlKan9y5TOy0Ljm7ewgBlnmf6yF3FY7x5WyS
-# rj2Ep+sxv2TEM7g81PLCu8HaQrQmsCtmDlPXRo5W3gN5NttnQxiLoKLyyHv89+xT
-# ASFY6s38WiDqbnZr1T3cXh8=
+# K/dqzYf+9rWTKrvzH+4wDQYJKoZIhvcNAQEBBQAEggIAKzd7ntuOSA28fyaQPezh
+# tQVUcgDFG9T0JNYj+4flLl9HetJUzv846aDSfbCEQbyzkY5JY1SZL72jsW5Xz5Bd
+# s/ZnglvCpnFL8S4I+ibuLd1d7tr2HGuUhqkR+PzGqnONXB5Foigf8UDoKwGIkYFn
+# 5b8B0quiAe+lkK9bxQewIUzr9RyZzDNY7erudwMLqr2ekGKaPurbWGzffMtr4i8O
+# LvAVnX/HMqhYIkGTn49wd5VYO0JKYnP0RlgNJOCTDm0jK6KbEgiTNKCWAwNwge3a
+# UaAzPD5hDTlApu/cDVWqlLey6ek+p1MVJKxHEbVSGOHKTpeTOjY5b/x6DwIEEw2D
+# ZGUU22m7kBXbiRgbqm5BAzMQYL66UGKmXcqxpPnUBHeKzEJf0KrgeiRnMsW2WGLM
+# 9/4nSRy9g2KsI5Q93Ab1FTHauPunaDYjfg2WJNZFFuDXeN7S1PGJ1CuGEVrqbnGy
+# EvrNlX7nsf4rMs9gNJSkUm4eccQbmBBmk12STJ/M9KpM1gKdVlpE5VX9ImqjPH+1
+# zrGrZzVsdAVQ1RQ6uF4zoNlk9HPvX3Nc4pF93ZdKxiSrV4WAj3Z0YAlofQ1vzByx
+# 5tJhFfcYbXOjr8Rb3ttllSi/cAg6B1i+s6jTHMKibT4HnQR2nHUMCTd7/KPToZ3i
+# CncSOyHxVIxLkxkbUTAbbbs=
 # SIG # End signature block
