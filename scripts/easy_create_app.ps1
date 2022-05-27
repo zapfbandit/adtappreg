@@ -146,14 +146,22 @@ $installAccount = 'system'
 $simpleAppName = Simplify-AppName $appName
 $appNameVer = "$($simpleAppName)_$appVersion"
 & git checkout -b $appNameVer
+
 if ((Test-Path $(Join-Path -Path $rootDir -ChildPath "apps")) -eq $false)
 {
-   New-Item -Path $(Join-Path -Path $rootDir -ChildPath "apps") -Name $simpleAppName -ItemType "directory"
+   New-Item -Path $rootDir -Name "apps" -ItemType "directory"
 }
+
 if ((Test-Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName)) -eq $false)
 {
-   New-Item -Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName) -Name $appVersion -ItemType "directory"
+   New-Item -Path "$rootDir\apps" -Name $simpleAppName -ItemType "directory"
 }
+
+if ((Test-Path $(Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion)) -eq $false)
+{
+   New-Item -Path $(Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $simpleAppName) -Name $appVersion -ItemType "directory"
+}
+
 $appDir = Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion
 $remoteDir = "$simpleAppName/$appVersion/setup_files"
 $templateContents = Get-Content -Path $(Join-Path -Path $rootDir -ChildPath "scripts\info.template.yml")
@@ -210,8 +218,8 @@ pause
 # SIG # Begin signature block
 # MIIf7QYJKoZIhvcNAQcCoIIf3jCCH9oCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCA3DAe8SID9/nu
-# sRPaYzNfuCVwMnr/K4af6in8kJ7rR6CCGbswggWRMIIEeaADAgECAhMVAAAACBly
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBwESB0LgGiUSwr
+# 2vbpBF2sVQ+K4D/PsgX5Mwo0dVSrUKCCGbswggWRMIIEeaADAgECAhMVAAAACBly
 # 8cTzWvVnAAEAAAAIMA0GCSqGSIb3DQEBDQUAMCMxITAfBgNVBAMTGEFEVC1ST09U
 # Q0VSVDAxLUFEVENBMjAyMDAeFw0yMTEwMjQwNDQxMzlaFw0yMjEwMjQwNDUxMzla
 # MG4xEjAQBgoJkiaJk/IsZAEZFgJhdTETMBEGCgmSJomT8ixkARkWA2NvbTETMBEG
@@ -354,29 +362,29 @@ pause
 # ExFBRFQtQ0VSVFNFUlYwMS1DQQITOgAAASX5BO4qbgcSmgACAAABJTANBglghkgB
 # ZQMEAgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJ
 # AzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8G
-# CSqGSIb3DQEJBDEiBCA16+0nx582mH0KfC6+HDqNIBqxQT96Ov4BY9FsqKd8OTAN
-# BgkqhkiG9w0BAQEFAASCAQCRbtBaS4VdYrt3gru6dvM4+nrK+2uyoGdB7anvdPCu
-# Vt6gs5TGn+A/3TMsx+BnH2L/7h9bAuOAXdUG/lUJUIGDOAs2WEVyQjax0R/IXys1
-# ZpUU6XJnkzRy9549VvvdJBmt2kl0WLE/+BBpajqHF4cv1FjIwRlPFpOBBm/kNh0i
-# FN9P1+QS91tm6IXo/dWT7jnslWyCExyfeELi1hDHD7qmcqf5oXe2k24VC4f3cf2q
-# aYAwKshiqDtzW/lYWT8ghh+rdqBzlPB6M8V3USbO6QaDhFXV3yFxLiKfsYPW3jPd
-# Ubl9gzruD3bS3nm9iy7pDd2vdXMdxLg4GV8r0V7qhoc7oYIDTDCCA0gGCSqGSIb3
+# CSqGSIb3DQEJBDEiBCACsCVI1HM9lw1rQazlN38A6NZOa8BxNhs2yPxWNzNmwTAN
+# BgkqhkiG9w0BAQEFAASCAQAYSHktGW9KozJOJP5bi6idddXXjvnQKhj+/fPsgSeC
+# Jj6ypFhgeWSMBGldjyof/YO143o9DaZtSutDFVKJgssw8ZJ2Egyearf7AhMl8QQS
+# 1P5hu7A37HA5LsRhgBXgR6vuztZdczhXdrIh4c9rhBCirm1n9yD3/mqwWZI3VQiJ
+# ep5VHH2NS++bg3MDSYDboEOJzOnOUcssRpV46Z6UwGTPXZEIJk1Ke1BIo7nNHLcM
+# C6MQR+IESc2HH7HqzswdBs3S0Qt6/uV4eFPSy5XX0/KDGBXvn2phNMuRuuN8bvrH
+# ey2VmgLtxsousz1KPAi7e++/0Flyc+7jDGK3e1CCx1l0oYIDTDCCA0gGCSqGSIb3
 # DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVh
 # dGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNVBAoTD1NlY3Rp
 # Z28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBTdGFtcGluZyBD
 # QQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAYBgkqhkiG9w0B
-# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjYyMzU0NTVaMD8G
-# CSqGSIb3DQEJBDEyBDD9PIrpYE9ZaN1UEPpY0SFAK33CwKjkKr0e9pommf+4IQYX
-# K6dGr0oMDR9DKvFBk+owDQYJKoZIhvcNAQEBBQAEggIAfTwQHId2uB/nCpeQhDmU
-# UYLI5mbnkfaXwl6RBHAIbWXhGl8x4jnx+Fky/2X5ZR9NPUZfv9CaHP531VPSFH8Z
-# NdMAhedtYChed7gI9IDqQLOkLcH5XpAPPeWL6KsypYJjK+/WIX9Gerz7GsBKcEhm
-# imdUPos6qLnfzQfHCA7u7d2Kkavq/lHe4Y8NYHLsy27cFlGxhkEi9TNbpydLbSJ3
-# Dc6xhnq3tIPHeGaxv7nw8xpwZo33of+WYdhz/wmOWeZLNf10cnF/x5oTVPxOICnb
-# Mut1dUUbJTLCb+Vglsf0VPNdwb5/rxwAhJxAayBO4MOoMUdUQf4uYVBR1TZJ76Jt
-# uN0xYixriDRLCaxkVhm8HdGaI7yPKzK6bdiXopW5tsrgJByDZMXv++noyi0zRieT
-# hhWfbs4zkUavA5/UJD+7Br4aiOm6FLOJ0geaTbGOJz7R+PWdCcRWBXmZgWJwM4qi
-# PGHRkKuIyULWPUKcJ2gxtxOdQ7HaLwoJVXhBPn8IsT3EJpW+Jq2nNHfN5H0qb+N/
-# IKdBf4Z5+Y9ST3yIVLrHcQgQADyMhH2p1gGt82AvM4Y+CIEfUch+W0p69wsdnoTG
-# Vi+ulIP2MjxprqSUVpnqeuhXZ5OvoNFZwYJ/Upr9XUXGkc64SxZ7K4QaM+qnLkSt
-# 3Xj2t3h0bzTVpX3NQzuSq4A=
+# CQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA1MjcwMDE0MzNaMD8G
+# CSqGSIb3DQEJBDEyBDDkiSerw+HrO+jCKWGLzEdlvhh7KjIrcic5C6111xtEvB69
+# 6PiiYhcfggL7n+s/m3QwDQYJKoZIhvcNAQEBBQAEggIABTb2wFkcawJESs04Z0iv
+# F00AlqdM3oM2j58PWR6h/GDvwvQTOs2kwxWXcE14MNA8KQQ4BylKFI1y2hWrAFcC
+# 2nJ2d/bwRUuPw7kv53KULL7BMqA7fEb1m41fFkbV+Bla7iRgVhbSd1wvIntMKD2r
+# VML/w8PXMslX2uW/IN3weyScF9mqic8ycgdvD+Nhcl4dXQj3jhPrRNlKxNYmHIZt
+# fz64xCVscTUgWQgKU0neck6RKoHTwNnPjqX10fiVnZH3HmAqt9uZPMfzEph3C9LD
+# a2xdnuQQZxvpAQmAAiaCzA+ZlGbNx/E14684JtGJSawzqzYXnxDojIh6zBJww8IC
+# uzaSPTCDIizyiiwTrHPlLsdaDVTNTzGLRqyGIi6ctEiUkoFYbNM8FVLSTSP8BOJp
+# q/n96tWft0vChjAaEFBgMftnGgSCkBdsse4vzXbsFxY0as29Ve8AIBsdnIsajucw
+# Cv47Mblh9jclJCivIJxrvd8eaZ7uEujy39RtYIUR8JlHcBLMkIE0XX1SGct9t7Wf
+# sx7HhjEaZnlzKvSYMEBFOXnVT+/eFFMyQuEkpextLeJEUS3guXttygsaKF0f3ANv
+# NEONnnHN3eoxOACNVfLiM7QF7KkaFxb3+z8OxXCZ4mD0BYLoQVVj9emIklVL3hDo
+# qgMJtSjjk3ff68SJRU2rxpg=
 # SIG # End signature block
