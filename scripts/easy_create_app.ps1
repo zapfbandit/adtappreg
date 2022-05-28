@@ -159,7 +159,7 @@ if ((Test-Path $(Join-Path -Path "$rootDir\apps" -ChildPath $simpleAppName)) -eq
 
 if ((Test-Path $(Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion)) -eq $false)
 {
-   New-Item -Path $(Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $simpleAppName) -Name $appVersion -ItemType "directory"
+   New-Item -Path $(Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion) -Name $appVersion -ItemType "directory"
 }
 
 $appDir = Join-Path -Path "$rootDir\apps\$simpleAppName" -ChildPath $appVersion
