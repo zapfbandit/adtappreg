@@ -13,7 +13,7 @@ assignments:
     
 # Info on how to install application
 installInfo:
-  setupFile: 7z2107-x64.msi
+  setupFile: 
   remoteFilesPaths: 
     - igor/1.0.0.0/setup_files
     #- ${app_name_no_spaces}/1.0.0.0/setup_files
